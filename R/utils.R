@@ -1196,15 +1196,23 @@ impute_na = function(data_table, method) {
 }
 
 
-get_lipid_classes = function(feature_list, uniques = TRUE){
-
-
-
+get_lipid_classes = function(feature_list, 
+                             uniques = TRUE,
+                             is_lipidyzer_data = FALSE) {
   classes = sapply(feature_list, function(x)
     strsplit(x = x,
              split = " ",
              fixed = TRUE)[[1]][1])
   classes = as.vector(classes)
+  
+  if(!is_lipidyzer_data) {
+    classes <- ifelse(classes %in% c("PC", "PE", "PG"),
+                      gsub(x = feature_list,
+                           pattern = "(P[CEG]) ([OP])?(-)?.*",
+                           replacement = "\\1\\3\\2"),
+                      classes)
+  }
+  
   if (uniques) {
     return(unique(classes))}
   else{
@@ -1226,7 +1234,8 @@ get_feature_metadata <- function(feature_table,
 get_feature_metadata.lipidyzer = function(feature_table) {
   
   feature_table[, 'Lipid class'] = get_lipid_classes(feature_list = rownames(feature_table),
-                                                     uniques = FALSE)
+                                                     uniques = FALSE,
+                                                     is_lipidyzer_data = TRUE)
   # Collect carbon and unsaturation counts
   new_feature_table = list()
   
@@ -1288,6 +1297,10 @@ get_feature_metadata.general = function(feature_table) {
   
   feature_table[, 'Lipid class'] = get_lipid_classes(feature_list = rownames(feature_table),
                                                      uniques = FALSE)
+  
+  print("Rico")
+  print(unique(feature_table[, "Lipid class"]))
+  
   # Collect carbon and unsaturation counts
   new_feature_table = list()
   

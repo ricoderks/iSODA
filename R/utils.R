@@ -12,10 +12,10 @@ plotbox_switch = function(type) {
 
 gene_ontology_switch = function(selection) {
   switch (EXPR = selection,
-    'Gene ontology (ALL)' = 'ALL',
-    'Gene ontology (BP)'= 'BP',
-    'Gene ontology (MF)' = 'MF',
-    'Gene ontology (CC)' = 'CC'
+          'Gene ontology (ALL)' = 'ALL',
+          'Gene ontology (BP)'= 'BP',
+          'Gene ontology (MF)' = 'MF',
+          'Gene ontology (CC)' = 'CC'
   )
 }
 
@@ -63,7 +63,7 @@ r6_switch = function(exp_type, name, id, slot){
          "Transcriptomics" = Omics_exp$new(name = name, type = "Transcriptomics",id = id, slot = slot, param_file = './R/params/params_gene_based_omics.R'),
          # "Transcriptomics" = base::readRDS("/home/dolivierj/Dropbox/1_Travail/221219_lumc/230828_dmc_soda/iSODA_online_project/test_data/cellminer_iSODArds"),
          "Genomics" = Omics_exp$new(name = name, type = "Genomics",id = id, slot = slot, param_file = './R/params/params_gene_based_omics.R')
-
+         
   )
 }
 
@@ -91,7 +91,7 @@ table_switch = function(table_name, r6) {
          'Species summary table' = r6$tables$summary_species_table,
          'Class summary table' = r6$tables$summary_class_table,
          'GSEA prot list' = r6$tables$prot_list
-         )
+  )
 }
 
 table_name_switch = function(table_name) {
@@ -230,7 +230,7 @@ get_indexed_table = function(id_col,
   if (is.null(id_col)) {
     base::stop('ID column missing')
   }
-
+  
   # If id_col is numeric
   if (is.numeric(id_col) && id_col == as.integer(id_col)) {
     id_col = colnames(input_table)[id_col]
@@ -240,7 +240,7 @@ get_indexed_table = function(id_col,
   if (!id_col %in% colnames(input_table)) {
     stop(paste("Requested ID column '", id_col, "' not found in the table"))
   }
-
+  
   # Check if missing values
   if (base::any(base::is.na((input_table[[id_col]])))) {
     stop(paste("Requested ID column '", id_col, "' contains missing values"))
@@ -250,15 +250,15 @@ get_indexed_table = function(id_col,
   if (base::anyDuplicated(input_table[[id_col]]) > 0) {
     stop(paste("Requested ID column '", id_col, "' contains duplicate values"))
   }
-
+  
   # # Check if id_col has mixed types
   # if (length(coercible_positions(input_table[[id_col]])) != nrow(input_table)) {
   #   stop(paste("Requested ID column '", id_col, "' mixed data types, must be either fully numeric or fully string"))
   # }
-
+  
   # Check if id_col is coercible to numeric
   if (is_coercible_to_numeric(input_table[[id_col]])) {
-
+    
     if (!is_integer_char_vector(input_table[[id_col]])) {
       base::stop(paste0('Values in requested ID column <', id_col, '> contains floats: only integers allowed'))
     }
@@ -266,41 +266,41 @@ get_indexed_table = function(id_col,
     ids = as.numeric(input_table[[id_col]])
     input_table[[id_col]] = as.character(round(ids))
     
-
+    
     # warning(paste("Requested ID column '", id_col, "' is numeric, coercing to strings"))
     # 
     # ids = as.numeric(input_table[[id_col]])
     # max_digits = nchar(as.character(max(ids)))
     # input_table[[id_col]] = sprintf(paste0("S%0", max_digits, "d"), ids)
-
+    
   }
-
+  
   # Set id_col as the row names of the table
   rownames(input_table) = input_table[[id_col]]
-
+  
   # Remove the original id_col from the table
   input_table[[id_col]] = NULL
-
+  
   return(input_table)
 }
 
 measurement_filtering = function(raw_data,
-                                    blank_table,
-                                    indexed_meta,
-                                    batch_column,
-                                    group_column,
-                                    blank_multiplier,
-                                    sample_threshold,
-                                    group_threshold) {
-
+                                 blank_table,
+                                 indexed_meta,
+                                 batch_column,
+                                 group_column,
+                                 blank_multiplier,
+                                 sample_threshold,
+                                 group_threshold) {
+  
   # Add blank rows to indexed meta, only if they are not already there
   blank_table_idx = base::setdiff(rownames(blank_table), rownames(raw_data))
   if (length(blank_table_idx) > 0) {
     indexed_meta = indexed_meta[c(rownames(raw_data),
                                   rownames(blank_table)),]
   }
-
-
+  
+  
   # Blank filtering
   excluded_features = c()
   all_batches = sort(unique(indexed_meta[, batch_column]))
@@ -308,14 +308,14 @@ measurement_filtering = function(raw_data,
     batch_idx = rownames(indexed_meta)[indexed_meta[, batch_column] == b]
     batch_blanks = base::intersect(batch_idx, rownames(blank_table))
     batch_samples = base::intersect(batch_idx, rownames(raw_data))
-
+    
     excluded_features = c(excluded_features,
                           blank_filter(data_table = raw_data[batch_samples,],
                                        blank_table = blank_table[batch_blanks,],
                                        blank_multiplier = blank_multiplier,
                                        sample_threshold = sample_threshold))
   }
-
+  
   # Group filtering
   if (!is.null(excluded_features)) {
     salvaged_features = c()
@@ -327,15 +327,15 @@ measurement_filtering = function(raw_data,
       above_threshold = rep(0, length(excluded_features))
       names(above_threshold) = excluded_features
       for (b in unique(indexed_meta[group_idx, batch_column])) {
-
+        
         batch_idx = rownames(indexed_meta)[indexed_meta[, batch_column] == b]
         batch_blanks = base::intersect(batch_idx, rownames(blank_table))
         batch_samples = base::intersect(batch_idx, group_idx)
-
+        
         # get batch blank means
         blank_means = get_col_means(data_table = blank_table[batch_blanks,])
         threshold = blank_multiplier * blank_means
-
+        
         # Find features / columns below threshold
         for (col in excluded_features) {
           above_threshold[col] = above_threshold[col] + sum(raw_data[batch_samples,col] > threshold[col], na.rm = T)
@@ -359,7 +359,7 @@ batch_effect_correction_combat = function(raw_data,
                                           blank_table,
                                           qc_table,
                                           pool_table) {
-
+  
   if (batch_effect_correction == "Pool") {
     ctrl_table = pool_table
     ctrl_index = rownames(ctrl_table)
@@ -371,32 +371,32 @@ batch_effect_correction_combat = function(raw_data,
   } else {
     base::stop('Batch effect correction: select either None, Pool, QC or No controls')
   }
-
+  
   if (!is.null(ctrl_index)) {
-
+    
     ctrl_table = ctrl_table[, colSums(is.na(ctrl_table)) == 0]
-
+    
     remaining_features = base::intersect(colnames(raw_data), colnames(ctrl_table))
     if (ncol(raw_data) != length(remaining_features)) {
       base::warning(paste0("Batch effect correction: dropped ", ncol(raw_data) - length(remaining_features), " features not found in control."))
     }
-
+    
     fused_data = base::rbind(raw_data[,remaining_features],
                              blank_table[,remaining_features],
                              ctrl_table[,remaining_features])
     fused_meta = indexed_meta[rownames(fused_data),]
-
+    
   } else {
     remaining_features = base::intersect(colnames(raw_data), colnames(blank_table))
     fused_data = base::rbind(raw_data[,remaining_features],
                              blank_table[,remaining_features])
     fused_meta = indexed_meta[rownames(fused_data),]
-
+    
   }
-
+  
   # Set ID for imp meta
   batches = fused_meta[,batch_column]
-
+  
   if (length(ctrl_index) > 0) {
     fused_meta[, 'is_ctrl'] = F
     fused_meta[ctrl_index, 'is_ctrl'] = T
@@ -404,7 +404,7 @@ batch_effect_correction_combat = function(raw_data,
   } else {
     mod = NULL
   }
-
+  
   # parametric adjustment
   base::tryCatch({
     fused_data = sva::ComBat(dat=t(fused_data),
@@ -418,18 +418,18 @@ batch_effect_correction_combat = function(raw_data,
   error = function(e) {
     base::stop('Too many missing values, consider imputation.')
   })
-
-
+  
+  
   fused_data = t(fused_data)
-
+  
   raw_data = fused_data[rownames(raw_data),]
   blank_table = fused_data[rownames(blank_table),]
-
+  
   return(list(
     raw_data = raw_data,
     blank_table = blank_table
   ))
-
+  
 }
 
 
@@ -444,7 +444,7 @@ find_delim = function(path) {
 }
 
 soda_read_table = function(file_path, sep = NA, first_column_as_index = FALSE, transpose = F) {
-
+  
   # Set sep
   if (is.na(sep)) {
     if (stringr::str_sub(file_path, -4, -1) == ".tsv") {
@@ -453,19 +453,19 @@ soda_read_table = function(file_path, sep = NA, first_column_as_index = FALSE, t
       sep = find_delim(path = file_path)
     }
   }
-
+  
   
   # Read table (if transpose, header is temporarily ignored)
   if (stringr::str_sub(file_path, -5, -1) == ".xlsx") {
     data_table = readxl::read_xlsx(
-        path = file_path,
-        col_names = base::ifelse(transpose, F, T))
+      path = file_path,
+      col_names = base::ifelse(transpose, F, T))
   } else {
     data_table = data.table::fread(
       file_path,
       header = base::ifelse(transpose, F, T),
       sep = sep)
-
+    
   }
   
   # Transpose and set header on the final result
@@ -478,7 +478,7 @@ soda_read_table = function(file_path, sep = NA, first_column_as_index = FALSE, t
   
   # # Convert to dataframe for consistency
   data_table = as.data.frame(data_table, check.names = F)
-
+  
   # Set index if relevant and remove duplicated rows
   if (first_column_as_index) {
     duplicates = base::duplicated(data_table[,1])
@@ -496,16 +496,16 @@ soda_read_table = function(file_path, sep = NA, first_column_as_index = FALSE, t
     data_table = data_table[,-duplicated_columns]
     warning(paste0('Removed ', length(duplicated_columns), ' duplicated columns'))
   }
-    
+  
   return(data_table)
 }
 
 augment_feature_table = function(feature_table, external_table_name, external_feature_table) {
   feature_table$merge_on = rownames(feature_table)
   external_feature_table$merge_on = rownames(external_feature_table)
-
+  
   feature_table = base::merge(feature_table, external_feature_table, by = 'merge_on', all.x = TRUE, suffixes = c('', paste0('_', external_table_name)))
-
+  
   rownames(feature_table) = feature_table$merge_on
   feature_table$merge_on = NULL
   return(feature_table)
@@ -520,40 +520,40 @@ annotate_go = function(feature_names,
     print('ont should be one of [ALL, BP, MF, CC]')
     return()
   }
-
+  
   # Get GO annotations
   go_enrich_data = clusterProfiler::enrichGO(gene = feature_names,
                                              OrgDb = 'org.Hs.eg.db',
                                              keyType = keyType,
                                              ont = ont,
                                              pvalueCutoff = pvalueCutoff)
-
+  
   # Extract the GO table & filter
   go_table = go_enrich_data@result
   go_table = go_table[go_table$p.adjust < pvalueCutoff,]
-
+  
   if (nrow(go_table) == 0) {
     return(NULL)
   }
-
+  
   if (ont != 'ALL') {
     go_table$ONTOLOGY = ont
   }
-
+  
   # Split geneIDs by '/'
   feature_id = strsplit(go_table$geneID, "/")
-
+  
   # Repeat GO terms based on the number of feature_id it corresponds to
   goIDs_rep = rep(go_table$ID, sapply(feature_id, length))
-
+  
   # Convert feature_id list to dataframe
   feature_table = data.frame(feature_id = unlist(feature_id), ID = goIDs_rep, stringsAsFactors = FALSE)
-
+  
   # Group by gene and concatenate GO terms
   feature_table = aggregate(ID ~ feature_id, data = feature_table, FUN = function(x) paste(unique(x), collapse = "|"))
   rownames(feature_table) = feature_table$feature_id
   feature_table$feature_id = NULL
-
+  
   # Add features not associates with go terms
   missing_features = feature_names[!(feature_names %in% rownames(feature_table))]
   missing_features = data.frame(feature_id = missing_features,
@@ -561,13 +561,13 @@ annotate_go = function(feature_names,
   rownames(missing_features) = missing_features$feature_id
   missing_features$feature_id = NULL
   feature_table = rbind(feature_table, missing_features)
-
-
+  
+  
   return(list(
     go_table = go_table[,c('Description', 'ONTOLOGY')],
     feature_table = feature_table
   ))
-
+  
 }
 
 
@@ -597,7 +597,7 @@ axis_word_split = function(ticks, n) {
 replace_nth_space = function(string, n) {
   # Split the string by spaces
   parts = unlist(strsplit(string, " "))
-
+  
   # Replace every n-th element with the element and a newline character
   parts = sapply(seq_along(parts), function(i) {
     if (i %% n == 0) {
@@ -606,7 +606,7 @@ replace_nth_space = function(string, n) {
       return(parts[i])
     }
   })
-
+  
   # Collapse the parts back into a single string
   parts = paste(parts, collapse = " ")
   parts = base::trimws(base::gsub('\n ', '\n', parts))
@@ -639,15 +639,15 @@ format_values = function(values, digits = 2) {
 hex_to_rgba = function(hex, alpha = 1) {
   # Ensure hex is a character and remove possible '#' symbol
   hex = base::gsub("^#", "", as.character(hex))
-
+  
   # Convert hex to RGB values
   rgb = t(sapply(seq(1, nchar(hex), by=2), function(i) {
     as.integer(paste0("0x", substr(hex, i, i+1)))
   }))
-
+  
   # Combine RGB values with alpha to create RGBA string
   rgba = paste0("rgba(", rgb[1], ", ", rgb[2], ", ", rgb[3], ", ", alpha, ")")
-
+  
   return(rgba)
 }
 
@@ -675,14 +675,14 @@ numeric_check = function(value, default = NULL) {
 
 rowsort_df = function(rows, dataframe) {
   original_col_names = colnames(dataframe)
-
+  
   # If ordered vector
   if (is_coercible_to_numeric(rows)){
     row_names = rownames(dataframe)[rows]
   } else {
     row_names = rows
   }
-
+  
   dataframe = base::as.data.frame(dataframe[rows,], row.names = row_names)
   colnames(dataframe) = original_col_names
   return(dataframe)
@@ -693,11 +693,11 @@ normalize_continuous = function(x, min, max, new_min, new_max) {
 }
 
 adapt_color_palette = function(color_palette, values, named_vector = F, continuous = F) {
-
+  
   # Extract hexadecimal colors from palette names
   color_palette = get_colors(color_count = colors_switch(color_palette), color_palette = color_palette)
   # color_palette = RColorBrewer::brewer.pal(colors_switch(color_palette), color_palette)
-
+  
   # Scale colors if continuous, otherwise map 1:1
   if (continuous) {
     color_palette = colorRampPalette(color_palette)(100)
@@ -711,7 +711,7 @@ adapt_color_palette = function(color_palette, values, named_vector = F, continuo
   } else {
     color_palette = colorRampPalette(color_palette)(length(values))
   }
-
+  
   # Add names
   if (named_vector) {
     color_palette = stats::setNames(color_palette, values)
@@ -731,10 +731,10 @@ is_coercible_to_numeric = function(vector) {
 coercible_positions = function(vector) {
   # Try to convert the vector to numeric
   numeric_values = suppressWarnings(as.numeric(vector))
-
+  
   # Get the positions of values that are coercible to numeric
   coercible_positions = which(!is.na(numeric_values))
-
+  
   return(coercible_positions)
 }
 
@@ -836,7 +836,7 @@ print_tmw = function(m, w) {
   spsComps::shinyCatch({warning(module_msg)}, prefix = '',
                        position = "bottom-left",
                        blocking_level = "none")
-
+  
 }
 
 
@@ -852,9 +852,9 @@ write_to_log = function(msg) {
 #---------------------------------------------------------------- Plotboxes ----
 # Plotly plotbox
 get_plotly_box = function(id, label, dimensions_obj, session) {
-
+  
   ns = session$ns
-
+  
   bs4Dash::box(
     id = ns(paste0(id, "_plotbox")),
     title = label,
@@ -890,9 +890,9 @@ get_plotly_box = function(id, label, dimensions_obj, session) {
 
 # NetworkD3 plotbox
 get_networkd3_box = function(id, label, dimensions_obj, session) {
-
+  
   ns = session$ns
-
+  
   bs4Dash::box(
     id = ns(paste0(id, "_plotbox")),
     title = label,
@@ -928,9 +928,9 @@ get_networkd3_box = function(id, label, dimensions_obj, session) {
 
 # Visnet plotbox (for networks)
 get_visnet_box = function(id, label, dimensions_obj, session) {
-
+  
   ns = session$ns
-
+  
   bs4Dash::box(
     id = ns(paste0(id, "_plotbox")),
     title = label,
@@ -964,9 +964,9 @@ get_visnet_box = function(id, label, dimensions_obj, session) {
 
 # Regular plotbox (static plots)
 get_plot_box = function(id, label, dimensions_obj, session) {
-
+  
   ns = session$ns
-
+  
   bs4Dash::box(
     id = ns(paste0(id, "_plotbox")),
     title = label,
@@ -1047,7 +1047,7 @@ try_plot = function(prefix, r6, dimensions_obj, gen_function, spawn_function, im
       id = ns(paste0(gsub(" ", "_", tolower(prefix)), '_plot'))
     )
   })
-
+  
 }
 
 
@@ -1080,10 +1080,10 @@ get_fa_tails = function(feature_table) {
     paste0(feature_table[['Carbon count (chain 1)']][feature_table[['Lipid class']] != "TG"], ":", feature_table[['Double bonds (chain 1)']][feature_table[['Lipid class']] != "TG"]),
     paste0(feature_table[['Carbon count (chain 2)']], ":", feature_table[['Double bonds (chain 2)']])
   )
-
+  
   fa_tails = unique(fa_tails)
   fa_tails = sort(fa_tails[fa_tails != "0:0"])
-
+  
   return(fa_tails)
 }
 
@@ -1101,7 +1101,7 @@ get_group_median_table = function(data_table,
   
   # Precompute logical indices for each group
   group_indices = lapply(unique_groups, function(g) groups == g)
-
+  
   for (i in seq_along(unique_groups)) {
     group_idx = group_indices[[i]]
     group_table = data_table[group_idx, , drop = FALSE]
@@ -1124,10 +1124,10 @@ get_group_median_table = function(data_table,
 
 get_lipid_class_table = function(table,
                                  is_lipidyzer_data = FALSE){
-
+  
   # Get unique lipid classes
   classes = get_lipid_classes(feature_list = colnames(table), uniques = TRUE)
-
+  
   # Get a column vector to find easily which columns belong to each lipid group
   col_vector = get_lipid_classes(feature_list = colnames(table), uniques = FALSE)
   
@@ -1146,7 +1146,7 @@ get_lipid_class_table = function(table,
                        }
                      }
   )
-
+  
   return(out_table)
 }
 
@@ -1154,10 +1154,10 @@ normalise_lipid_class = function(lips_table) {
   # Get classes and unique classes for the lipid features
   classes = get_lipid_classes(feature_list = as.character(colnames(lips_table)), uniques = FALSE)
   classes_unique = get_lipid_classes(feature_list = as.character(colnames(lips_table)), uniques = TRUE)
-
+  
   # For each unique lipid class...
   for (lip_class in classes_unique){
-
+    
     # Get columns from that class...
     cols = which(classes == lip_class)
     if (length(cols) > 1) {
@@ -1199,19 +1199,58 @@ impute_na = function(data_table, method) {
 get_lipid_classes = function(feature_list, 
                              uniques = TRUE,
                              is_lipidyzer_data = FALSE) {
+  if(is_lipidyzer_data) {
+    results <- get_lipid_class.lipidzyer(feature_list = feature_list,
+                                         unique = uniques)
+  } else {
+    results <- get_lipid_class.general(feature_list = feature_list,
+                                       unique = uniques)
+  }
+  
+  return(results)
+}
+
+get_lipid_class.lipidzyer <- function(feature_list = NULL,
+                                      uniques = TRUE) {
   classes = sapply(feature_list, function(x)
     strsplit(x = x,
              split = " ",
              fixed = TRUE)[[1]][1])
   classes = as.vector(classes)
   
-  if(!is_lipidyzer_data) {
-    classes <- ifelse(classes %in% c("PC", "PE", "PG"),
-                      gsub(x = feature_list,
-                           pattern = "(P[CEG]) ([OP])?(-)?.*",
-                           replacement = "\\1\\3\\2"),
-                      classes)
+  if (uniques) {
+    return(unique(classes))}
+  else{
+    return(classes)
   }
+}
+
+get_lipid_class.general <- function(feature_list = NULL,
+                                    uniques = TRUE) {
+  feature_list <- sapply(strsplit(x = feature_list,
+                                  split = "\\|"), "[[", 2)
+  
+  classes = sapply(feature_list, function(x)
+    strsplit(x = x,
+             split = " ",
+             fixed = TRUE)[[1]][1])
+  classes = as.vector(classes)
+  # extract ether Phospolipids
+  classes <- ifelse(grepl(x = classes,
+                          pattern = "^L?P[CEGIS]$"),
+                    gsub(x = feature_list,
+                         pattern = "^(L?P[CEGIS]) ([OP])?(-)?.*",
+                         replacement = "\\1\\3\\2"),
+                    classes)
+  # extract oxidized lipids
+  classes <- ifelse(grepl(x = feature_list,
+                          pattern = "^(FA|P[CEGIS]|TG).*(;[0-9]?O|\\(2OH\\))$"),
+                    gsub(x = feature_list,
+                         pattern = "^(FA|P[CEGIS]|TG).*(;[0-9]?O|\\(2OH\\))$",
+                         replacement = "Ox\\1"),
+                    classes)
+  
+  print(classes)
   
   if (uniques) {
     return(unique(classes))}
@@ -1298,31 +1337,36 @@ get_feature_metadata.general = function(feature_table) {
   feature_table[, 'Lipid class'] = get_lipid_classes(feature_list = rownames(feature_table),
                                                      uniques = FALSE)
   
-  print("Rico")
-  print(unique(feature_table[, "Lipid class"]))
-  
   # Collect carbon and unsaturation counts
   new_feature_table = list()
   
   for (c in unique(feature_table[, 'Lipid class'])) {
     idx = rownames(feature_table)[feature_table[, 'Lipid class'] == c]
+    idx <- sapply(strsplit(x = idx,
+                           split = "\\|"), "[[", 2)
+    # print("Rico")
+    # print(c)
     
     if (c == "TG") {
       # For triglycerides
-      truffles = stringr::str_split(string = idx, pattern = " |:|-FA")
+      truffles = stringr::str_split(string = idx, pattern = " |:|_")
       names(truffles) = idx
       new_feature_table = c(new_feature_table, truffles)
-      
+    } else if (c == "ASG") {
+      # only 1 FA tail
+      # skip for now      
     } else if (sum(stringr::str_detect(string = idx, pattern = "/|_")) > 0) {
+      print("asyl groups")
       # For species with asyl groups ("/" or "_")
       truffles = stringr::str_split(string = idx, pattern = " |:|_|/")
       names(truffles) = idx
       new_feature_table = c(new_feature_table, truffles)
-      
     } else {
       # For the rest
-      truffles = paste0(idx, ':0:0')
+      print("rest")
+      truffles = paste0(idx, ':0:0:0:0')
       truffles = stringr::str_split(string = truffles, pattern = " |:")
+      # print(truffles)
       names(truffles) = idx
       new_feature_table = c(new_feature_table, truffles)
       
@@ -1349,6 +1393,8 @@ get_feature_metadata.general = function(feature_table) {
     'Double bonds (chain 1)',
     'Carbon count (chain 2)',
     'Double bonds (chain 2)',
+    'Carbon count (chain 3)',
+    'Double bonds (chain 3)',
     'Carbon count (sum)',
     'Double bonds (sum)'
   )
@@ -1395,7 +1441,7 @@ lips_get_del_cols = function(data_table,
                              blank_multiplier,
                              sample_threshold,
                              group_threshold) {
-
+  
   # Blank filtering
   del_cols = c()
   all_batches = unique(imp_meta[, batch_col])
@@ -1403,25 +1449,25 @@ lips_get_del_cols = function(data_table,
     batch_idx = which(imp_meta[, batch_col] == b)
     batch_blanks = base::intersect(batch_idx, idx_blanks)
     batch_samples = base::intersect(batch_idx, idx_samples)
-
+    
     # Get rownames
     batch_blanks = imp_meta[batch_blanks, id_col_meta]
     batch_samples = imp_meta[batch_samples, id_col_meta]
     batch_samples = base::intersect(rownames(data_table), batch_samples)
-
+    
     del_cols = c(del_cols, blank_filter(data_table = data_table[batch_samples,],
                                         blank_table = blank_table[as.character(batch_blanks),],
                                         blank_multiplier = blank_multiplier,
                                         sample_threshold = sample_threshold))
   }
-
+  
   del_cols = unique(del_cols)
   del_cols = sort(del_cols)
-
+  
   if (is.null(del_cols)) {
     return(del_cols)
   }
-
+  
   # Group filtering
   saved_cols = c()
   for (g in unique(raw_meta[,group_col])) {
@@ -1429,20 +1475,20 @@ lips_get_del_cols = function(data_table,
     above_threshold = rep(0, length(del_cols))
     names(above_threshold) = del_cols
     for (b in unique(imp_meta[group_idx, batch_col])) {
-
+      
       batch_idx = which(imp_meta[, batch_col] == b)
       batch_blanks = base::intersect(batch_idx, idx_blanks)
       batch_samples = base::intersect(batch_idx, group_idx)
-
+      
       # Get rownames
       batch_blanks = imp_meta[batch_blanks, id_col_meta]
       batch_samples = imp_meta[batch_samples, id_col_meta]
       batch_samples = base::intersect(rownames(data_table), batch_samples)
-
+      
       # get batch blank means
       blank_means = get_col_means(data_table = blank_table[as.character(batch_blanks),])
       threshold = blank_multiplier * blank_means
-
+      
       # Find features / columns below threshold
       for (col in del_cols) {
         above_threshold[col] = above_threshold[col] + sum(data_table[batch_samples,col] >= threshold[col], na.rm = T)
@@ -1451,12 +1497,12 @@ lips_get_del_cols = function(data_table,
     above_threshold = above_threshold / length(group_idx) >= group_threshold
     saved_cols = c(saved_cols, names(above_threshold)[above_threshold])
   }
-
+  
   saved_cols = unique(saved_cols)
   saved_cols = sort(saved_cols)
-
+  
   del_cols = setdiff(del_cols, saved_cols)
-
+  
   return(del_cols)
 }
 
@@ -1706,7 +1752,7 @@ fa_comp_hm_calc = function(data_table = NULL,
                            selected_group = NULL,
                            sample_meta = NULL,
                            selected_lipidclass = NULL) {
-
+  
   res = switch(
     composition,
     "fa_tail" = fa_comp_hm_calc.fa(data_table = data_table,
@@ -1722,7 +1768,7 @@ fa_comp_hm_calc = function(data_table = NULL,
                                           sample_meta = sample_meta,
                                           selected_lipidclass = selected_lipidclass)
   )
-
+  
   return(res)
 }
 
@@ -1736,7 +1782,7 @@ fa_comp_hm_calc.fa = function(data_table = NULL,
   ## samples
   idx_samples = rownames(sample_meta)[sample_meta[, group_col] == selected_group]
   hm_data = data_table[idx_samples, , drop = FALSE]
-
+  
   ## features
   feature_table$lipid = rownames(feature_table)
   if(selected_lipidclass == "All") {
@@ -1749,7 +1795,7 @@ fa_comp_hm_calc.fa = function(data_table = NULL,
   # special lipid classes
   tail1_only = c("CE", "FA", "LPC", "LPE")
   tail2_only = c("Cer", "HexCER", "LacCER", "SM", "TG")
-
+  
   if(selected_lipidclass == "All") {
     uniq_carbon = c(min(c(selected_features[["Carbon count (chain 2)"]][selected_features[["Lipid class"]] %in% tail2_only],
                           selected_features[["Carbon count (chain 1)"]][!(selected_features[["Lipid class"]] %in% tail2_only)],
@@ -1776,21 +1822,21 @@ fa_comp_hm_calc.fa = function(data_table = NULL,
                      max(c(selected_features[["Double bonds (chain 1)"]], selected_features[["Double bonds (chain 2)"]])))
     }
   }
-
+  
   ## calculations
   # initialize result matrix
   res = matrix(ncol = length(uniq_carbon[1]:uniq_carbon[2]),
                nrow = length(uniq_unsat[1]:uniq_unsat[2]))
   colnames(res) = uniq_carbon[1]:uniq_carbon[2]
   rownames(res) = uniq_unsat[1]:uniq_unsat[2]
-
+  
   for(a in rownames(res)) { # unsaturation
     for(b in colnames(res)) { # carbons
       idx_lipids = selected_features$lipid[(selected_features[["Carbon count (chain 1)"]] == b &
                                               selected_features[["Double bonds (chain 1)"]] == a) |
                                              (selected_features[["Carbon count (chain 2)"]] == b &
                                                 selected_features[["Double bonds (chain 2)"]] == a)]
-
+      
       idx_lipids_double = selected_features$lipid[(selected_features[["Carbon count (chain 1)"]] == b &
                                                      selected_features[["Double bonds (chain 1)"]] == a) &
                                                     (selected_features[["Carbon count (chain 2)"]] == b &
@@ -1800,17 +1846,17 @@ fa_comp_hm_calc.fa = function(data_table = NULL,
       } else {
         res[a, b] = 0
       }
-
+      
       # compensate for if a specific tails appears twice in a lipid, sum again
       if(length(idx_lipids_double) > 0) {
         res[a, b] = sum(res[a, b], hm_data[, idx_lipids_double], na.rm = TRUE)
       }
     }
   }
-
+  
   # calculate the proportion
   res = res / sum(res)
-
+  
   return(res)
 }
 
@@ -1823,15 +1869,15 @@ fa_comp_hm_calc.total = function(data_table = NULL,
   ## samples
   idx_samples = rownames(sample_meta)[sample_meta[, group_col] == selected_group]
   hm_data = data_table[idx_samples, , drop = FALSE]
-
+  
   ## features
   feature_table$lipid = rownames(feature_table)
   selected_features = feature_table[feature_table[["Lipid class"]] == selected_lipidclass, ]
-
+  
   # get the unique chain lengths and unsaturation
   uniq_carbon = c(min(selected_features[["Carbon count (sum)"]]), max(selected_features[["Carbon count (sum)"]]))
   uniq_unsat = c(min(selected_features[["Double bonds (sum)"]]), max(selected_features[["Double bonds (sum)"]]))
-
+  
   ## calculations
   # initialize result matrix
   res = matrix(ncol = length(uniq_carbon[1]:uniq_carbon[2]),
@@ -1849,10 +1895,10 @@ fa_comp_hm_calc.total = function(data_table = NULL,
       }
     }
   }
-
+  
   # calculate the proportion
   res = res / sum(res)
-
+  
   return(res)
 }
 
@@ -1876,14 +1922,14 @@ fa_comp_heatmap = function(data = NULL,
   # prepare data
   data_df = as.data.frame(data)
   data_df$row = rownames(data)
-
+  
   data_df = data_df |>
     tidyr::pivot_longer(cols = -row,
                         names_to = "col",
                         values_to = "value")
   data_df$row = as.numeric(data_df$row)
   data_df$col = as.numeric(data_df$col)
-
+  
   colors = get_color_palette(
     groups = 1:10,
     color_palette = color_palette,
@@ -1891,9 +1937,9 @@ fa_comp_heatmap = function(data = NULL,
     force_scale = F,
     force_list = F
   )
-
+  
   colors = unname(colors)
-
+  
   # make heatmap
   fig = plotly::plot_ly(data = data_df,
                         x = ~col,
@@ -1910,10 +1956,10 @@ fa_comp_heatmap = function(data = NULL,
     plotly::colorbar(limits = color_limits,
                      title = "Proportion",
                      tickfont = list(size = legend_label_font_size)) |>
-
+    
     plotly::style(xgap = 3,
                   ygap = 3)
-
+  
   if(!showlegend) {
     fig = fig |>
       plotly::hide_colorbar()
@@ -1943,7 +1989,7 @@ fa_comp_heatmap = function(data = NULL,
                   dash = "dot"),
       showlegend = FALSE
     ) |>
-
+    
     plotly::layout(
       font = list(
         size = 9
@@ -1979,7 +2025,7 @@ fa_comp_heatmap = function(data = NULL,
       xanchor = c("right", "left"),
       yanchor = c("bottom", "middle")
     )
-
+  
   if(y_pos_right) {
     fig = fig |>
       plotly::layout(
@@ -2036,7 +2082,7 @@ fa_comp_heatmap = function(data = NULL,
         )
       )
   }
-
+  
   return(fig)
 }
 
@@ -2044,7 +2090,7 @@ fa_comp_heatmap = function(data = NULL,
 format_label = function(
     label,
     font_size
-  ) {
+) {
   if (is_none(label)) {
     label = NULL
     font_size = NULL
@@ -2054,7 +2100,7 @@ format_label = function(
     label = NULL
     font_size = NULL
   }
-
+  
   return(list(
     label = label,
     font_size = font_size
@@ -2072,20 +2118,20 @@ get_plot_font_data = function(
     y_tick_font_size,
     legend_label,
     legend_font_size
-  ) {
-
+) {
+  
   title_data = format_label(label = title,
                             font_size = title_font_size)
-
+  
   x_label_data = format_label(label = x_label,
                               font_size = x_label_font_size)
-
+  
   y_label_data = format_label(label = y_label,
                               font_size = y_label_font_size)
-
+  
   legend_label_data = format_label(label = legend_label,
                                    font_size = legend_font_size)
-
+  
   if (is_none(x_tick_font_size)) {
     x_tick_font_size = NULL
     x_tick_show = T
@@ -2094,7 +2140,7 @@ get_plot_font_data = function(
   } else {
     x_tick_show = T
   }
-
+  
   if (is_none(y_tick_font_size)) {
     y_tick_font_size = NULL
     y_tick_show = T
@@ -2103,9 +2149,9 @@ get_plot_font_data = function(
   } else {
     y_tick_show = T
   }
-
-
-
+  
+  
+  
   if (!is.null(legend_label_data$font_size)) {
     if (legend_label_data$font_size == 0) {
       legend_show = F
@@ -2117,7 +2163,7 @@ get_plot_font_data = function(
   } else {
     legend_show = F
   }
-
+  
   return(list(
     title = title_data$label,
     title_font_size = title_data$font_size,
@@ -2185,13 +2231,13 @@ pca_plot_loadings = function(x, y, feature_list, width, height, colour_list){
   fig = fig %>% add_trace(x = x, y = y,
                           type = "scatter", mode = "text", text = feature_list,
                           textposition = 'middle right', showlegend = F)
-
+  
   shape_list = list(
     hline(0),
     vline(0)
   )
-
-
+  
+  
   for (i in 1:length(feature_list)) {
     feature = feature_list[i]
     new_line = list(
@@ -2206,9 +2252,9 @@ pca_plot_loadings = function(x, y, feature_list, width, height, colour_list){
     )
     shape_list[[length(shape_list) + 1]] = new_line
   }
-
+  
   fig = fig %>% layout(shapes = shape_list)
-
+  
   return(fig)
 }
 
@@ -2275,21 +2321,21 @@ circle = function(x, y, alpha = 0.95, len = 200){
 
 lipidomics_summary_plot = function(r6, data_table) {
   groups = get_lipid_classes(colnames(r6$tables$imp_data)[2:length(colnames(r6$tables$imp_data))], uniques = T)
-
+  
   plot_table = data.frame(table(base::factor((get_lipid_classes(colnames(data_table), uniques = F)), levels = groups)))
   names(plot_table) = c("class", "raw")
   plot_table$imported = table(base::factor((get_lipid_classes(colnames(r6$tables$imp_data)[2:length(colnames(r6$tables$imp_data))], uniques = F)), levels = groups))
   plot_table$removed = plot_table$imported - plot_table$raw
-
+  
   absolute_counts = as.data.frame(base::matrix(nrow = 2*nrow(plot_table)))
   absolute_counts$classes = c(plot_table$class, plot_table$class)
   absolute_counts$values = c(plot_table$removed, plot_table$raw)
   absolute_counts$status = c(rep('kept', nrow(plot_table)), rep('removed', nrow(plot_table)))
   absolute_counts$V1 = NULL
-
+  
   relative_counts = absolute_counts
   relative_counts$values = round(100*(relative_counts$values/c(plot_table$imported, plot_table$imported)))
-
+  
   plot_1 = ggplot(absolute_counts ,
                   aes(
                     fill=status ,
@@ -2314,8 +2360,8 @@ lipidomics_summary_plot = function(r6, data_table) {
     scale_fill_manual(values = c("#D2E8F5", "#007bff"))+
     coord_flip() +
     scale_y_reverse(limits = c(max(plot_table$imported), 0))
-
-
+  
+  
   plot_2 = ggplot(relative_counts,
                   aes(
                     fill=status ,
@@ -2340,7 +2386,7 @@ lipidomics_summary_plot = function(r6, data_table) {
     ) +
     scale_fill_manual(values = c("#D2E8F5", "#007bff"))+
     coord_flip()
-
+  
   return(gridExtra::grid.arrange(plot_1, plot_2, ncol=2))
 }
 
@@ -2349,24 +2395,24 @@ lipidomics_summary_plot = function(r6, data_table) {
 #--------------------------------------------------------------- Statistics ----
 
 get_pca_data = function(data_table){
-
+  
   pca_data = pcaMethods::pca(object = data_table,
                              nPcs = 2,
                              scale = "none",
                              cv = "q2",
                              completeObs = T)
-
+  
   return(pca_data)
 }
 
 apply_discriminant_analysis = function(data_table, group_list, nlambda = 100, alpha = 0.8, seed = 1) {
-
+  
   ncol_1 = ncol(data_table)
   data_table = data_table[,!is.na(colSums(data_table))]
   ncol_2 = ncol(data_table)
   delta_1 = ncol_1 - ncol_2
   delta_1_percent = round(100*(delta_1 / ncol_1),1)
-
+  
   if (delta_1_percent > 0){
     if(delta_1_percent < 50) {
       base::warning(paste0("Discriminant analysis : dropped ", delta_1, " (", delta_1_percent, "%)", " features containing NA values."))
@@ -2374,7 +2420,7 @@ apply_discriminant_analysis = function(data_table, group_list, nlambda = 100, al
       base::stop(paste0("Discriminant analysis: ", delta_1_percent, "% of features contained NA values and were removed. Consider imputation."))
     }
   }
-
+  
   count = table(group_list)
   if (any(count < 3)) {
     dead_groups = names(count)[count < 3]
@@ -2382,20 +2428,20 @@ apply_discriminant_analysis = function(data_table, group_list, nlambda = 100, al
     data_table = data_table[!(group_list %in% dead_groups),]
     group_list = group_list[!(group_list %in% dead_groups)]
   }
-
+  
   if (length(unique(group_list)) > 2) {
     family = "multinomial"
   } else {
     family = "binomial"
   }
-
+  
   coef = NULL
   attempt_count = 1
   while(is.null(coef)) {
     base::warning(paste0("Discriminant analysis: attempt ", attempt_count))
     if (attempt_count == 5) {
       base::stop("Discriminant analysis failed after 5 attempts")
-      }
+    }
     attempt_count = attempt_count + 1
     base::tryCatch(
       {
@@ -2406,83 +2452,83 @@ apply_discriminant_analysis = function(data_table, group_list, nlambda = 100, al
                                  alpha = alpha,
                                  type.multinomial = "grouped",
                                  family = family)
-
+        
       },error=function(e){
       },finally={}
     )
   }
-
+  
   coef = stats::coef(coef, s = "lambda.min")
   if (family == 'multinomial'){
     keep_cols = as.matrix(coef[[1]])
   }else {
     keep_cols = as.matrix(coef)
   }
-
+  
   keep_cols = rownames(keep_cols)[which(keep_cols != 0)]
   if (length(keep_cols) == 1) {
     stop("Discriminant analysis: no discriminant features could be found.")
   }
   keep_cols = keep_cols[2:length(keep_cols)]
-
+  
   delta_2 = ncol(data_table) - length(keep_cols)
   delta_2_percent = round(100*(delta_2 / ncol(data_table)),1)
-
+  
   base::warning(paste0(length(keep_cols), " features selected, dropped ", delta_2, " (", delta_2_percent, "%) with no signal variation."))
-
+  
   data_table = data_table[,keep_cols]
   return(data_table)
 }
 
 
 get_fold_changes = function(data_table, idx_group_1, idx_group_2, used_function, impute_inf = F) {
-
+  
   if (used_function == "median") {
     av_function = function(x) {return(stats::median(x, na.rm = T))}
   } else {
     av_function = function(x) {return(base::mean(x, na.rm = T))}
   }
-
-
+  
+  
   fold_changes = apply(data_table, 2, function(column) {
     mean_group1 = av_function(column[idx_group_1])
     mean_group2 = av_function(column[idx_group_2])
-
+    
     # Impute NA means with 0
     if (is.na(mean_group1)) mean_group1 = 0
     if (is.na(mean_group2)) mean_group2 = 0
-
+    
     fold_change = mean_group2 / mean_group1
-
+    
     return(fold_change)
   })
-
+  
   if (impute_inf) {
     # Impute infinite (x/0)
     if (length(which(fold_changes == Inf)) > 0) {
       fold_changes[which(fold_changes == Inf)] = max(fold_changes[which(fold_changes != Inf)]) * 1.01
     }
-
+    
     # Impute zeros (0/x)
     if (length(which(fold_changes == 0)) > 0) {
       fold_changes[which(fold_changes == 0)] = min(fold_changes[which(fold_changes > 0)]) * 0.99
     }
   }
-
+  
   # Impute NaNs (0/0)
   if (length(which(is.nan(fold_changes)) > 0)) {
     fold_changes[which(is.nan(fold_changes))] = 1
   }
-
+  
   return(fold_changes)
-
+  
 }
 
 get_p_val = function(data_table, idx_group_1, idx_group_2, used_function, impute_na = F) {
-
+  
   if (used_function == "Wilcoxon") {
     test_function=function(x,y){
-
+      
       if(all(x==mean(x, na.rm = T), na.rm = T)&all(y==mean(y, na.rm = T), na.rm = T)) {
         return(1)
       } else{
@@ -2491,19 +2537,19 @@ get_p_val = function(data_table, idx_group_1, idx_group_2, used_function, impute
     }
   } else if (used_function == "t-Test") {
     test_function=function(x,y){
-
+      
       if(all(x==mean(x, na.rm = T), na.rm = T)&all(y==mean(y, na.rm = T), na.rm = T)) {
         return(1)
       } else{
         return(stats::t.test(x, y)$p.value)
       }
     }
-
+    
   }
-
-
-
-
+  
+  
+  
+  
   # pval_list = c()
   # for (column in colnames(data_table)) {
   #   group1 = data_table[idx_group_1, column]
@@ -2518,27 +2564,27 @@ get_p_val = function(data_table, idx_group_1, idx_group_2, used_function, impute
   #   }
   # }
   #
-
-
+  
+  
   p_values = apply(data_table, 2, function(column) {
     group1 = column[idx_group_1]
     group2 = column[idx_group_2]
-
+    
     # Check if there are enough non-NA values to conduct a t-test
     if (sum(!is.na(group1)) < 2 || sum(!is.na(group2)) < 2) {
       return(NA)  # Return NA if not enough data
     }
-
+    
     test_result = test_function(group1, group2)  # Assuming equal variance
     return(test_result)
   })
-
-
+  
+  
   if ((length(which(is.na(p_values))) > 0) & impute_na){
     p_values[which(is.na(p_values))] = min(p_values, na.rm = T) * 0.99
   }
-
-
+  
+  
   return(p_values)
 }
 
@@ -2556,47 +2602,47 @@ get_comparison_table = function(data_table,
   rownames_group_1 = rownames(sample_table)[sample_table[, group_col] == group_1]
   rownames_group_2 = rownames(sample_table)[sample_table[, group_col] == group_2]
   all_rownames = sort(unique(c(rownames_group_1, rownames_group_2)))
-
+  
   # Filter data to keep only the two groups
   data_table = data_table[all_rownames,]
-
+  
   # Get the indices for each group
   idx_group_1 = which(rownames(data_table) %in% rownames_group_1)
   idx_group_2 = which(rownames(data_table) %in% rownames_group_2)
-
-
+  
+  
   # Remove empty columns
   data_table = remove_empty_cols(table = data_table)
-
+  
   comparison_table = data.frame(row.names = colnames(data_table))
-
+  
   # Collect fold changes
   comparison_table[, 'Fold change'] = get_fold_changes(data_table = data_table,
                                                        idx_group_1 = idx_group_1,
                                                        idx_group_2 = idx_group_2,
                                                        used_function = fc_function)
-
+  
   # Get log2 fold change
   comparison_table[,'Log2(fold change)'] = log2(comparison_table[, 'Fold change'])
-
+  
   # Collect p-values
   comparison_table[, 'p-value'] = get_p_val(data_table = data_table,
                                             idx_group_1 = idx_group_1,
                                             idx_group_2 = idx_group_2,
                                             used_function = statistical_test)
-
+  
   # Get log10 pval
   comparison_table[,'-Log10(p-value)'] = -log10(comparison_table[, 'p-value'])
-
+  
   # Add adjusted p-value
   comparison_table[, 'p-adjusted'] = stats::p.adjust(comparison_table[, 'p-value'], method = adjustment_method)
   comparison_table[, '-Log10(p-adjusted)'] = -log10(comparison_table[, 'p-adjusted'])
-
+  
   # Add feature table cols
   if (ncol(feature_table) > 0) {
     comparison_table[,colnames(feature_table)] = feature_table[rownames(comparison_table),]
   }
-
+  
   return(comparison_table)
 }
 
@@ -2644,7 +2690,7 @@ initialize_omics = function(name,
                             operation_order = c("Imputation", "Batch correction", "Filtering"),
                             norm_col = "None",
                             verbose = F) {
-
+  
   ####---- Initialize ----
   self = Omics_exp$new(name = name,
                        type = type,
@@ -2653,7 +2699,7 @@ initialize_omics = function(name,
                        version = version,
                        param_file = param_file)
   if (verbose) {print("Initialized omics")}
-
+  
   ####---- Imported tables ----
   self$import_meta(path = meta_file, input_format = meta_file_format)
   self$import_data(path = data_file, input_format = data_file_format)
@@ -2738,13 +2784,13 @@ initialize_omics = function(name,
       self$derive_data_tables()
       if (verbose) {print("Derived data tables")}
     }
-
+    
   }
   ####---- Return ----
   return(self)
 }
-  
-    
+
+
 
 
 #---------------------------------------------- Enrichment & GSEA utilities ----
@@ -2761,23 +2807,23 @@ get_ea_object = function(ea_feature_table,
                          OrgDb,
                          pAdjustMethod,
                          seed = 1) {
-
+  
   base::set.seed(seed)
-
+  
   # Get the feature list
   feature_list = ea_feature_table$`Log2(fold change)`
   names(feature_list) = rownames(ea_feature_table)
-
+  
   # NA omit and sort
   feature_list = na.omit(feature_list)
   feature_list = sort(feature_list, decreasing = TRUE)
-
+  
   # Filter by selected features if relevant
   if (!is.null(selected_features)) {
     feature_list = feature_list[which(names(feature_list) %in% selected_features)]
     feature_table = feature_table[selected_features, ]
   }
-
+  
   if (!is.null(terms_table)) {
     ea_object = custom_gsea(geneList = feature_list,
                             minGSSize = minGSSize,
@@ -2817,20 +2863,20 @@ get_ora_object = function(ora_feature_table = self$tables$ora_feature_table,
                           minGSSize = self$params$overrepresentation$minGSSize,
                           maxGSSize  = self$params$overrepresentation$maxGSSize,
                           seed = 1) {
-
+  
   base::set.seed(seed)
-
+  
   # Sort by log2(fc)
   ora_feature_table = ora_feature_table[order(-ora_feature_table$`Log2(fold change)`),]
-
+  
   # Get universe (all features)
   universe = ora_feature_table$`Log2(fold change)`
   names(universe) = rownames(ora_feature_table)
   universe = na.omit(universe)
   universe = names(universe)
-
+  
   # ora_feature_table = ora_feature_table[ora_feature_table$selected, ]
-
+  
   if (!is.null(selected_features)) {
     ora_feature_table = ora_feature_table[which(rownames(ora_feature_table) %in% selected_features), ]
   } else {
@@ -2841,14 +2887,14 @@ get_ora_object = function(ora_feature_table = self$tables$ora_feature_table,
       ora_feature_table = ora_feature_table[ora_feature_table$`p-adjusted` <= pval_cutoff_features,]
     }
   }
-
+  
   if (nrow(ora_feature_table) == 0) {
     stop("Could not select any features under selected parameters.")
   } else {
     feature_list = rownames(ora_feature_table)
   }
-
-
+  
+  
   if (!is.null(terms_table)) {
     ora_object = custom_ora(geneList = feature_list,
                             pvalueCutoff = pval_cutoff,
@@ -2870,7 +2916,7 @@ get_ora_object = function(ora_feature_table = self$tables$ora_feature_table,
                                            minGSSize = minGSSize,
                                            maxGSSize  = maxGSSize)
   }
-
+  
   return(ora_object)
 }
 
@@ -2880,7 +2926,7 @@ get_ora_object = function(ora_feature_table = self$tables$ora_feature_table,
 get_sparse_matrix = function(column_values, column_terms, terms_list) {
   # Initialize a list to store the one-hot encoded vectors
   one_hot_list = vector("list", length(column_values))
-
+  
   # Loop through each gene and create a one-hot encoded vector
   for (i in seq_along(names(column_values))) {
     # Create a boolean vector for the presence of each GO term
@@ -2888,13 +2934,13 @@ get_sparse_matrix = function(column_values, column_terms, terms_list) {
     # Add the vector to the list
     one_hot_list[[i]] = one_hot_vector
   }
-
+  
   # Combine the one-hot encoded vectors into a matrix
   sparse_matrix = do.call(rbind, one_hot_list)
-
+  
   # Convert the matrix to a sparse matrix
   sparse_matrix = Matrix::Matrix(sparse_matrix, sparse = TRUE)
-
+  
   # Add row and column names to the sparse matrix
   rownames(sparse_matrix) = names(column_values)
   colnames(sparse_matrix) = terms_list
@@ -2980,31 +3026,31 @@ plot_fa_dot_plot = function(object,
                             ytick_size = 15,
                             width = NULL,
                             height = NULL){
-
+  
   xtick_show = base::ifelse(xtick_size > 0, T, F)
   ytick_show = base::ifelse(ytick_size > 0, T, F)
-
-
+  
+  
   # Checks
   if (!is.numeric(show_categories)) {
     base::stop("Invalid number of categories to display")
   }
-
+  
   if (!(color %in% c("pvalue", "p.adjust"))) {
     base::stop("Invalid color, choose one of pvalue or p.adjust")
   }
-
+  
   if (!(mode %in% c("Both", "Activated", "Suppressed"))) {
     base::stop("Invalid mode, choose one of Both, Activated or Suppressed")
   }
-
+  
   data_table = as.data.frame(object) # Already sorted by p.value
-
+  
   if (show_categories > nrow(data_table)) {
     show_categories = nrow(data_table)
     base::warning(paste0("Too many categories selected, setting to max: ", show_categories))
   }
-
+  
   if (class(object)[1] == "enrichResult") {
     data_table = data_table[1:show_categories,]
     feature_counts = NULL
@@ -3018,7 +3064,7 @@ plot_fa_dot_plot = function(object,
     data_table$GeneRatio = data_table$GeneCount / data_table$setSize
     data_table$Sign = NA
     mode = "None"
-
+    
   } else {
     top_activated = rownames(data_table)[data_table$enrichmentScore > 0][1:show_categories]
     top_suppressed = rownames(data_table)[data_table$enrichmentScore < 0][1:show_categories]
@@ -3035,14 +3081,14 @@ plot_fa_dot_plot = function(object,
     data_table$Sign = "Suppressed"
     data_table$Sign[data_table$enrichmentScore > 0] = "Activated"
   }
-
+  
   # Order the table
   if (reverse_order) {
     data_table = data_table[base::rev(base::order(data_table[,order_by])), ]
   } else {
     data_table = data_table[base::order(data_table[,order_by]), ]
   }
-
+  
   # Add hover
   data_table$hover = paste0(
     data_table[,"Description"],
@@ -3059,23 +3105,23 @@ plot_fa_dot_plot = function(object,
     "\nSign: ",
     data_table[,"Sign"]
   )
-
+  
   # Format y axis ticks & word split
   yaxis_ticks = axis_word_split(ticks = data_table[,y], n = yaxis_word_split)
   data_table[,y] = base::factor(yaxis_ticks, levels = yaxis_ticks)
-
+  
   # Get the color palette values
   color_scale = get_color_palette(groups = data_table[,color],
                                   color_palette = color_palette,
                                   reverse_color_palette = reverse_palette,
                                   force_scale = T)
-
-
-
+  
+  
+  
   if (mode == "Both") {
     activated_data = data_table[data_table$Sign == "Activated", ]
     suppressed_data = data_table[data_table$Sign == "Suppressed", ]
-
+    
     plot_activated = plotly::plot_ly(width = width, height = height)
     plot_activated = plotly::add_trace(
       p = plot_activated,
@@ -3101,7 +3147,7 @@ plot_fa_dot_plot = function(object,
       text = activated_data$hover,
       hoverinfo = "text"
     )
-
+    
     plot_activated = plotly::layout(
       p = plot_activated,
       plot_bgcolor='rgba(0,0,0,0)',
@@ -3143,8 +3189,8 @@ plot_fa_dot_plot = function(object,
         )
       )
     )
-
-
+    
+    
     plot_suppressed = plotly::plot_ly(width = width, height = height)
     plot_suppressed = plotly::add_trace(
       p = plot_suppressed,
@@ -3170,7 +3216,7 @@ plot_fa_dot_plot = function(object,
       text = suppressed_data$hover,
       hoverinfo = "text"
     )
-
+    
     plot_suppressed = plotly::layout(
       p = plot_suppressed,
       plot_bgcolor='rgba(0,0,0,0)',
@@ -3212,7 +3258,7 @@ plot_fa_dot_plot = function(object,
         )
       )
     )
-
+    
     plot = plotly::subplot(
       list(
         activated = plot_activated,
@@ -3221,8 +3267,8 @@ plot_fa_dot_plot = function(object,
       shareX = T,
       shareY = F
     )
-
-
+    
+    
   } else {
     if (mode == "None") {mode = ""}
     plot = plotly::plot_ly(width = width, height = height)
@@ -3249,12 +3295,12 @@ plot_fa_dot_plot = function(object,
       text = data_table$hover,
       hoverinfo = "text"
     )
-
+    
     plot = plotly::layout(
       p = plot,
       title = list(text = base::ifelse(title_size == 0, "", mode),
                    font = list(size = title_size)),
-
+      
       xaxis = list(
         title = list(
           text = base::ifelse(xlabel_size == 0, "", x),
@@ -3266,7 +3312,7 @@ plot_fa_dot_plot = function(object,
         mirror = TRUE,
         tickfont = list(size = xtick_size)
       ),
-
+      
       yaxis = list(
         showticklabels = ytick_show,
         showline = TRUE,
@@ -3278,10 +3324,10 @@ plot_fa_dot_plot = function(object,
       paper_bgcolor='rgba(0,0,0,0)'
     )
   }
-
+  
   return(list(plot = plot,
               table = data_table))
-
+  
 }
 
 
@@ -3307,7 +3353,7 @@ plot_fa_ridge_plot = function(object,
                               legend_font_size = 10,
                               width = NULL,
                               height = NULL) {
-
+  
   # Process fonts
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
@@ -3315,17 +3361,17 @@ plot_fa_ridge_plot = function(object,
   x_axis_title = base::ifelse(x_label_font_size > 0, "Log2(fold change)", "")
   y_axis_title = base::ifelse(y_label_font_size > 0, "Feature sets", "")
   title = base::ifelse(title_font_size > 0, "Ridge plot", "")
-
+  
   # Get data & check
   data_table = as.data.frame(object)
-
+  
   # Checks
   if (show_category > nrow(data_table)) {
     show_category = nrow(data_table)
     base::warning(paste0("Too many categories selected, setting to max: ", show_category))
   }
   data_table = data_table[1:show_category, ]
-
+  
   # Select the desired features
   non_core_enriched = NULL
   for (gs in rownames(data_table)) {
@@ -3334,14 +3380,14 @@ plot_fa_ridge_plot = function(object,
   data_table$non_core_enriched = non_core_enriched
   data_table$core_enrichment_count = stringr::str_count(data_table$core_enrichment, '/') + 1
   data_table$non_core_enriched_count = stringr::str_count(data_table$non_core_enriched, '/') + 1
-
+  
   if (core_enrichment) {
     queried_data = "core_enrichment"
   } else {
     queried_data = "non_core_enriched"
   }
-
-
+  
+  
   # Get feature values
   gs2val = list()
   for (gs in rownames(data_table)) {
@@ -3357,10 +3403,10 @@ plot_fa_ridge_plot = function(object,
   }
   data_table$gs2val = gs2val
   max_x = max(unlist(gs2val))
-
+  
   # Order the data
   data_table = data_table[base::order(data_table[,orderBy], decreasing = decreasing),]
-
+  
   # Calculate bandwidth
   min_value = min(unname(unlist(gs2val)), na.rm = T)
   max_value = max(unname(unlist(gs2val)), na.rm = T)
@@ -3371,7 +3417,7 @@ plot_fa_ridge_plot = function(object,
   }
   bandwidth = base::mean(base::vapply(data_table$gs2val, stats::bw.nrd0, numeric(1)))
   total_seq = seq(floor(min_value),ceiling(max_value), by=bandwidth)
-
+  
   # Get the color palette values
   color_count = colors_switch(color_palette)
   color_list = get_colors(color_count = color_count, color_palette = color_palette)
@@ -3381,13 +3427,13 @@ plot_fa_ridge_plot = function(object,
   unique_values = sort(unique(data_table[,fill]))
   color_list = grDevices::colorRampPalette(color_list)(length(unique_values))
   names(color_list) = unique_values
-
+  
   # Get the color scale
   color_scale = get_color_palette(groups = data_table[,fill],
                                   color_palette = color_palette,
                                   reverse_color_palette = reverse_palette,
                                   force_scale = T)
-
+  
   # Produce the plot
   plot = plotly::plot_ly(width = width, height = height)
   incr = 0
@@ -3404,7 +3450,7 @@ plot_fa_ridge_plot = function(object,
     fill_value = data_table[gs, fill]
     fill_col = color_list[as.character(fill_value)]
     fill_value = base::format(fill_value, scientific = TRUE, digits = 3)
-
+    
     tmp_table = as.data.frame(table(cut(unname(data_table[gs, "gs2val"][[1]]), breaks=total_seq)))
     tmp_table$Var1 = strsplit(gsub("\\(|]", "", levels(tmp_table$Var1)), ',')
     x_values = c()
@@ -3412,7 +3458,7 @@ plot_fa_ridge_plot = function(object,
       x_values = c(x_values, mean(as.numeric(stringr::str_split(l, ",")[[1]])))
     }
     tmp_table$Var1 = x_values
-
+    
     tmp_table$hover = paste0(gs,
                              ":\nCount: ",
                              tmp_table$Freq,
@@ -3420,9 +3466,9 @@ plot_fa_ridge_plot = function(object,
                              fill_value,
                              "\nLog2(fold change): ",
                              round(tmp_table$Var1,2))
-
+    
     tmp_table$Freq = tmp_table$Freq / max(tmp_table$Freq) + incr
-
+    
     plot = plotly::add_trace(plot,
                              line = list(
                                color = "#FFFFFF",
@@ -3434,9 +3480,9 @@ plot_fa_ridge_plot = function(object,
                              y = c(incr-0.01, incr-0.01),
                              legendgroup=0,
                              showlegend = F)
-
+    
     incr = incr + 1
-
+    
     plot = plotly::add_trace(plot,
                              fill = "tonexty",
                              line = list(color = "#000000",
@@ -3453,9 +3499,9 @@ plot_fa_ridge_plot = function(object,
                              hoverinfo = "text",
                              legendgroup=0,
                              showlegend = F)
-
+    
   }
-
+  
   # Trace for color scale only
   plot = add_trace(plot,
                    x = unique_values,
@@ -3473,7 +3519,7 @@ plot_fa_ridge_plot = function(object,
                    legendgroup=0,
                    showlegend = F
   )
-
+  
   plot = plotly::layout(
     p = plot ,
     title = title,
@@ -3496,7 +3542,7 @@ plot_fa_ridge_plot = function(object,
       gridcolor = "rgb(255,255,255)",
       gridwidth = 1
     ),
-
+    
     xaxis = list(
       title = list(
         text = x_axis_title,
@@ -3508,7 +3554,7 @@ plot_fa_ridge_plot = function(object,
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)'
   )
-
+  
   return(list(plot = plot,
               table = data_table))
 }
@@ -3532,7 +3578,7 @@ plot_fa_bar_plot = function(object,
                             legend_font_size = 10,
                             width = NULL,
                             height = NULL) {
-
+  
   # Fonts
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
@@ -3540,7 +3586,7 @@ plot_fa_bar_plot = function(object,
   x_axis_title = base::ifelse(x_label_font_size > 0, x, "")
   y_axis_title = base::ifelse(y_label_font_size > 0, "Feature sets", "")
   title = base::ifelse(title_font_size > 0, "Bar plot", "")
-
+  
   # Extract data
   data_table = as.data.frame(object)
   if (show_category > nrow(data_table)) {
@@ -3550,13 +3596,13 @@ plot_fa_bar_plot = function(object,
   data_table = data_table[1:show_category,]
   data_table$GeneRatio = unname(sapply(data_table$GeneRatio, function(x) eval(parse(text=x))))
   colnames(data_table)[which(colnames(data_table) == 'Count')] = "GeneCount"
-
+  
   # Order data
   data_table = data_table[base::order(data_table[,order_by], decreasing = order_decreasing), ]
-
+  
   # Displayed labels
   if (displayed_label != "None") {
-
+    
     yaxis_ticks = axis_word_split(ticks = data_table[, displayed_label], n = yaxis_word_split)
     data_table[,displayed_label] = base::factor(yaxis_ticks, levels = yaxis_ticks)
     ticks = levels(data_table[, displayed_label])
@@ -3564,15 +3610,15 @@ plot_fa_bar_plot = function(object,
     data_table[, "None"] = 1:nrow(data_table)
     ticks = list()
   }
-
+  
   # Get the color scale
   color_scale = get_color_palette(groups = data_table[,color],
                                   color_palette = color_palette,
                                   reverse_color_palette = reverse_palette,
                                   force_scale = T)
-
+  
   plot = plotly::plot_ly(width = width, height = height)
-
+  
   plot = plotly::add_trace(
     p = plot,
     x = data_table[,x],
@@ -3588,12 +3634,12 @@ plot_fa_bar_plot = function(object,
       showscale = legend_show
     )
   )
-
+  
   plot = plotly::layout(
     p = plot,
     title = list(text = title,
                  font = list(size = title_font_size)),
-
+    
     xaxis = list(
       title = list(
         text = x_axis_title,
@@ -3603,7 +3649,7 @@ plot_fa_bar_plot = function(object,
       showline = TRUE,
       tickfont = list(size = x_tick_font_size)
     ),
-
+    
     yaxis = list(
       title = list(
         text = y_axis_title,
@@ -3618,12 +3664,12 @@ plot_fa_bar_plot = function(object,
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)'
   )
-
+  
   return(list(
     plot = plot,
     table = data_table
   ))
-
+  
 }
 
 #------------------------------------------------------------- FA CNET plot ----
@@ -3647,19 +3693,19 @@ plot_fa_cnet_plot = function(x,
                              springConstant = 0.01,
                              width = NULL,
                              height = NULL) {
-
+  
   # Checks
   if (!(solver %in% c("barnesHut", "repulsion"))) {
     base::stop("solver must be one of [barnesHut, repulsion")
   }
-
+  
   data_table = as.data.frame(x)
-
+  
   if (show_category > nrow(data_table)){
     base::warning(paste0("Too many categories selected, reducing to max: ", nrow(data_table)))
     show_category = nrow(data_table)
   }
-
+  
   if (class(x)[1] == "gseaResult") {
     feature_col = 'core_enrichment'
   } else if (class(x)[1] == "enrichResult") {
@@ -3667,9 +3713,9 @@ plot_fa_cnet_plot = function(x,
     data_table$GeneRatio = unname(sapply(data_table$GeneRatio, function(x) eval(parse(text=x))))
     colnames(data_table)[which(colnames(data_table) == 'Count')] = "GeneCount"
   }
-
+  
   data_table = data_table[1:show_category,]
-
+  
   if (displayed_labels == 'Description') {
     data_table$set_nodes = data_table$Description
   } else if (displayed_labels == 'ID') {
@@ -3681,11 +3727,11 @@ plot_fa_cnet_plot = function(x,
   }
   set_nodes = data_table$set_nodes
   feature_nodes = unique(stringr::str_split(paste0(data_table[,feature_col], collapse = '/'), '/(?=[a-zA-Z])')[[1]])
-
+  
   all_nodes = c(set_nodes, feature_nodes)
   set_nodes_idx = 1:length(set_nodes)
   feature_nodes_idx = (length(set_nodes) + 1):(length(feature_nodes) + length(set_nodes))
-
+  
   node_table = data.frame(matrix(nrow = length(all_nodes), ncol = 1))
   colnames(node_table) = c("id")
   node_table$id = all_nodes
@@ -3695,12 +3741,12 @@ plot_fa_cnet_plot = function(x,
   node_table$color = NA
   node_table$title = NA
   node_table$font.size = label_font_size
-
+  
   # Add hovers
   hover_values = c('enrichmentScore', 'NES', 'pvalue', 'p.adjust', 'GeneRatio', 'GeneCount')
   hover_values = hover_values[hover_values %in% colnames(data_table)]
-
-
+  
+  
   if (set_node_annotations == 'None') {
     node_table[set_nodes_idx, "color"] = "#ff8000"
   } else {
@@ -3713,7 +3759,7 @@ plot_fa_cnet_plot = function(x,
     node_table[set_nodes_idx,"color"] = unname(set_node_colors[as.character(node_table[set_nodes_idx, "values"])])
     node_table[set_nodes_idx,"title"] = paste0(set_node_annotations, ': ', format_values(node_table[set_nodes_idx, "values"]))
   }
-
+  
   if (feature_node_annotations == 'None') {
     node_table[feature_nodes_idx, "color"] = "#0000FF"
   } else {
@@ -3726,7 +3772,7 @@ plot_fa_cnet_plot = function(x,
     node_table[feature_nodes_idx,"color"] = unname(feature_node_colors[as.character(node_table[feature_nodes_idx, "values"])])
     node_table[feature_nodes_idx,"title"] = paste0(feature_node_annotations, ': ', format_values(node_table[feature_nodes_idx, "values"]))
   }
-
+  
   source_nodes = c()
   target_nodes = c()
   for (i in rownames(data_table)) {
@@ -3734,13 +3780,13 @@ plot_fa_cnet_plot = function(x,
     target_nodes = c(target_nodes, set_features)
     source_nodes = c(source_nodes, rep(data_table[i, 'set_nodes'], length(set_features)))
   }
-
+  
   edge_table = data.frame(matrix(nrow = length(target_nodes), ncol = 2))
   colnames(edge_table) = c("from", "to")
   edge_table$from = source_nodes
   edge_table$to = target_nodes
   edge_table$width = rep(1, nrow(edge_table))
-
+  
   plot = visNetwork::visNetwork(node_table, edge_table)
   if (static_network) {
     g = igraph::graph_from_data_frame(edge_table, directed = TRUE)
@@ -3749,10 +3795,10 @@ plot_fa_cnet_plot = function(x,
                        label = as.character(1:igraph::vcount(g)),
                        x = layout[,1] * 100,
                        y = -layout[,2] * 100)
-
+    
     node_table$x = nodes$x
     node_table$y = nodes$y
-
+    
     plot = visNetwork::visNodes(
       graph = plot,
       fixed = FALSE,
@@ -3761,9 +3807,9 @@ plot_fa_cnet_plot = function(x,
     )
     plot = visNetwork::visPhysics(graph = plot, enabled = FALSE)
     plot = visNetwork::visOptions(graph = plot, highlightNearest = TRUE, nodesIdSelection = TRUE)
-
+    
   } else {
-
+    
     if (solver == "barnesHut") {
       plot = visNetwork::visPhysics(plot,
                                     solver = "barnesHut",
@@ -3783,12 +3829,12 @@ plot_fa_cnet_plot = function(x,
     plot = visNetwork::visOptions(plot,
                                   highlightNearest = TRUE, nodesIdSelection = TRUE)
   }
-
+  
   return(list(plot = plot,
               table = list(node_table = node_table,
                            edge_table = edge_table))
   )
-
+  
 }
 
 #------------------------------------------------------------- FA EMAP plot ----
@@ -3819,22 +3865,22 @@ plot_fa_emap_plot = function(x,
                              width = NULL,
                              height = NULL
 ) {
-
+  
   data_table = as.data.frame(x)
-
+  
   if (mode == "Activated") {
     data_table = data_table[data_table$enrichmentScore > 0,]
   } else if (mode == "Suppressed") {
     data_table = data_table[data_table$enrichmentScore < 0,]
   }
-
+  
   # check if show_category appropriate
   if (show_category > nrow(data_table)) {
     base::warning(paste0("Too many categories selected, reducing to max: ", nrow(data_table)))
     show_category = nrow(data_table)
   }
   data_table = data_table[1:show_category,]
-
+  
   if (class(x)[1] == "gseaResult") {
     data_table$GeneCount = stringr::str_count(data_table[,"core_enrichment"], '/') + 1
     data_table$GeneRatio = data_table$GeneCount / data_table$setSize
@@ -3842,7 +3888,7 @@ plot_fa_emap_plot = function(x,
     data_table$GeneRatio = unname(sapply(data_table$GeneRatio, function(x) eval(parse(text=x))))
     colnames(data_table)[which(colnames(data_table) == 'Count')] = "GeneCount"
   }
-
+  
   # Set displayed label
   if (displayed_labels == 'Description') {
     data_table$label = data_table$Description
@@ -3853,17 +3899,17 @@ plot_fa_emap_plot = function(x,
   } else {
     stop("displayed_labels must be in ['Description', 'ID', 'ID and Description']")
   }
-
+  
   # Get description to ID dict
   desc_id_dict = rownames(data_table)
   names(desc_id_dict) = data_table$Description
-
+  
   # Calculate similarities
   x = enrichplot::pairwise_termsim(x = x,
                                    method = similarity_score,
                                    semData = NULL,
                                    showCategory = show_category*3)
-
+  
   # Get edge table
   edge_table = x@termsim
   base::diag(edge_table) = 0
@@ -3876,8 +3922,8 @@ plot_fa_emap_plot = function(x,
   edge_table$from = unname(desc_id_dict[as.character(edge_table$from)])
   edge_table$to = unname(desc_id_dict[as.character(edge_table$to)])
   edge_table$title = paste0(similarity_score, ' score: ', format_values(edge_table$score))
-
-
+  
+  
   # Edge aesthetics
   if (edge_width == "Similarity score") {
     edge_table$width = edge_table$score
@@ -3893,7 +3939,7 @@ plot_fa_emap_plot = function(x,
   } else {
     edge_table$color = "black"
   }
-
+  
   # Filter out missing edges
   if (any(is.na(edge_table$from))) {
     edge_table = edge_table[!is.na(edge_table$from),]
@@ -3901,8 +3947,8 @@ plot_fa_emap_plot = function(x,
   if (any(is.na(edge_table$to))) {
     edge_table = edge_table[!is.na(edge_table$to),]
   }
-
-
+  
+  
   # Get node table
   node_table = data_table[,c('ID', 'label', size, color)]
   colnames(node_table) = c("id", "label", "size", "color_values")
@@ -3914,9 +3960,9 @@ plot_fa_emap_plot = function(x,
                             color,
                             ' (color): ',
                             format_values(node_table$color_values)
-                            )
-
-
+  )
+  
+  
   # Setting the color gradient
   node_colors = get_color_palette(groups = node_table[, "color_values"],
                                   color_palette = node_color_palette,
@@ -3926,12 +3972,12 @@ plot_fa_emap_plot = function(x,
   node_table[,"color"] = unname(node_colors[as.character(node_table[, "color_values"])])
   node_table$size = node_table$size * node_magnifier
   node_table$font.size = label_font_size
-
-
+  
+  
   plot = visNetwork::visNetwork(node_table, edge_table, width = width, height = height)
   if (static_network) {
     g = igraph::graph_from_data_frame(edge_table, directed = TRUE)
-
+    
     # Catch singletons if there are any
     node_ids = base::unique(node_table$id)
     graph_nodes = igraph::V(g)$name
@@ -3939,16 +3985,16 @@ plot_fa_emap_plot = function(x,
     if (length(singleton_nodes) > 0) {
       g = igraph::add_vertices(g, length(singleton_nodes), name=singleton_nodes)
     }
-
+    
     layout = igraph::layout_with_fr(g)
     nodes = data.frame(id = 1:igraph::vcount(g),
                        label = as.character(1:igraph::vcount(g)),
                        x = layout[,1] * 100,
                        y = -layout[,2] * 100)
-
+    
     node_table$x = nodes$x
     node_table$y = nodes$y
-
+    
     plot = visNetwork::visNodes(
       graph = plot,
       fixed = FALSE,
@@ -3957,9 +4003,9 @@ plot_fa_emap_plot = function(x,
     )
     plot = visNetwork::visPhysics(graph = plot, enabled = FALSE)
     plot = visNetwork::visOptions(graph = plot, highlightNearest = TRUE, nodesIdSelection = TRUE)
-
+    
   } else {
-
+    
     if (solver == "barnesHut") {
       plot = visNetwork::visPhysics(plot,
                                     solver = "barnesHut",
@@ -3979,45 +4025,45 @@ plot_fa_emap_plot = function(x,
     plot = visNetwork::visOptions(plot,
                                   highlightNearest = TRUE, nodesIdSelection = TRUE)
   }
-
+  
   return(list(plot = plot,
               table = list(
                 node_table = node_table,
                 edge_table = edge_table
               )))
-
+  
 }
 #-------------------------------------------------------- PLOTLY DENDROGRAM ----
 # Define function
 plot_dendrogram = function(data_table, meta_table, annotations, distance_method = "euclidian", p = 2, clustering_method = "ward.D2", k_clusters = NULL, color_palette = 'Spectral', rotate = FALSE, x_tick_font_size, y_label_font_size, y_tick_font_size, width = NULL, height = NULL) {
-
+  
   # Fonts
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ylabel_show = base::ifelse(y_label_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
-
+  
   # Save and reset rownames
   original_rownames = rownames(data_table)
   rownames(data_table) = NULL
   rownames(meta_table) = NULL
-
+  
   # Filter the metadata table
   meta_table = as.data.frame(meta_table[, annotations])
   colnames(meta_table) = annotations
-
+  
   # Create the dendrogram
   hc = stats::hclust(stats::dist(data_table,
                                  method = distance_method,
                                  p = p),
                      method = clustering_method)
-
+  
   # Get clusters if specified
   if (!is.null(k_clusters)) {
     clusters = stats::cutree(tree = hc, k = k_clusters)
     meta_table[,'k_clusters'] = clusters
     annotations = c(annotations, 'k_clusters')
   }
-
+  
   # Deal with colors
   if (length(annotations) > length(color_palette)) {
     all_colors = c('Blues', 'BuGn', 'BuPu', 'GnBu', 'Greens', 'Greys', 'Oranges',
@@ -4031,22 +4077,22 @@ plot_dendrogram = function(data_table, meta_table, annotations, distance_method 
     additional_palettes = length(annotations) - length(color_palette)
     color_palette = c(color_palette, all_colors[1:additional_palettes])
   }
-
+  
   p = ggdendro::ggdendrogram(hc, rotate = rotate, size = 2)
-
+  
   plotly_dendro = plotly::ggplotly(p)
   plotly_dendro = plotly::layout(p = plotly_dendro,
                                  yaxis = list(showticklabels = ytick_show,
                                               tickfont = list(size = y_tick_font_size)))
-
-
-
+  
+  
+  
   # Reorder the rownames according to clustering
   original_rownames = original_rownames[hc$order]
   meta_table = as.data.frame(meta_table[hc$order, annotations])
   colnames(meta_table) = annotations
-
-
+  
+  
   # Dealing with colors
   heatmaps_list = list(
     dendro = plotly_dendro
@@ -4054,18 +4100,18 @@ plot_dendrogram = function(data_table, meta_table, annotations, distance_method 
   for (i in 1:length(annotations)) {
     annotations_i = annotations[i]
     groups = sort(unique(meta_table[,annotations_i]))
-
+    
     color_palette_i = get_color_palette(groups = meta_table[,annotations_i],
                                         color_palette = color_palette[i],
                                         reverse_color_palette = F)
-
+    
     # Assign numeric values according to groups
     groups_numeric = 1:length(groups)
     names(groups_numeric) = as.character(groups)
     groups_numeric = unname(groups_numeric[as.character(meta_table[,annotations_i])])
     hover_text = paste(original_rownames, meta_table[,annotations_i], sep = '\n')
-
-
+    
+    
     # Produce the side color heatmap
     rownames(meta_table) = NULL
     x_values = factor(as.numeric(rownames(meta_table)), ordered = T, levels = unique(as.numeric(rownames(meta_table))))
@@ -4096,21 +4142,21 @@ plot_dendrogram = function(data_table, meta_table, annotations, distance_method 
     } else {
       stop('Unexpected annotation type')
     }
-
+    
     plotly_heatmap = plotly::layout(p = plotly_heatmap,
                                     yaxis = list(showticklabels = ylabel_show,
                                                  tickfont = list(size = y_label_font_size)),
                                     xaxis = list(tickvals = 1:length(x_values),
                                                  showticklabels = xtick_show,
                                                  tickfont = list(size = x_tick_font_size)))
-
+    
     heatmaps_list[[annotations_i]] = plotly_heatmap
-
+    
   }
-
+  
   heights = rep(0.1, length(annotations))
   heights = c(1 - sum(heights), heights)
-
+  
   out_plot = plotly::subplot(
     heatmaps_list,
     margin = 0,
@@ -4119,18 +4165,18 @@ plot_dendrogram = function(data_table, meta_table, annotations, distance_method 
     shareY = F,
     heights = heights
   )
-
+  
   out_plot = plotly::layout(p = out_plot,
                             xaxis = list(ticktext = original_rownames))
-
+  
   # Set sample names back to the meta_table
   rownames(meta_table) = original_rownames
-
+  
   return(list(
     plot = out_plot,
     data_table = meta_table)
-    )
-
+  )
+  
 }
 
 
@@ -4154,34 +4200,34 @@ sample_clustering = function(data_table,
                              y_tick_font_size = 0,
                              width = NULL,
                              height = NULL) {
-
+  
   # Fonts
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
   title = base::ifelse(title_font_size > 0, paste0('<span style="font-size: ', title_font_size, 'px;">Sample clustering</span>'), "")
-
+  
   # Get the affinity matrix
   data_table = base::as.matrix(stats::dist(x = data_table,
                                            method = distance_method))
   data_table = SNFtool::affinityMatrix(data_table, K = K_nearest_neighbors, sigma = sigma)
-
+  
   # Change samplenames if coercible to numeric (plotly requirement)
   if (is_coercible_to_numeric(rownames(data_table))) {
     rownames(data_table) = paste0('X',rownames(data_table))
     colnames(data_table) = paste0('X',colnames(data_table))
   }
-
+  
   clusters = SNFtool::spectralClustering(data_table, K = K_clusters)
   order_by_cluster = base::order(clusters)
   data_table = data_table[order_by_cluster,order_by_cluster]
   diag(data_table) = min(data_table, na.rm = T)
-
-
-
+  
+  
+  
   # Annotations
   meta_table = meta_table[order_by_cluster,]
   meta_table[, 'K clusters'] = clusters[order_by_cluster]
-
+  
   if (!is.null(vertical_annotations)) {
     if (length(vertical_annotations) > 1) {
       vertical_annotations = meta_table[, vertical_annotations]
@@ -4193,7 +4239,7 @@ sample_clustering = function(data_table,
       colnames(vertical_annotations) = stringr::str_replace_all(row_names, "_", " ")
     }
   }
-
+  
   if (!is.null(horizontal_annotations)) {
     if (length(horizontal_annotations) > 1) {
       horizontal_annotations = meta_table[, horizontal_annotations]
@@ -4205,7 +4251,7 @@ sample_clustering = function(data_table,
       colnames(horizontal_annotations) = stringr::str_replace_all(row_names, "_", " ")
     }
   }
-
+  
   # Use z_max and z_min
   if (!is.null(z_max)) {
     data_table[data_table > z_max] = z_max
@@ -4217,15 +4263,15 @@ sample_clustering = function(data_table,
   } else {
     z_min = min(data_table, na.rm = T)
   }
-
-
+  
+  
   # Get the color palette
   color_count = colors_switch(color_palette)
   colors = get_colors(color_count = color_count, color_palette = color_palette)
   if (reverse_palette) {
     colors = base::rev(colors)
   }
-
+  
   plot = heatmaply::heatmaply(
     data_table,
     colors = colors,
@@ -4246,7 +4292,7 @@ sample_clustering = function(data_table,
     p = plot,
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)'
-    )
+  )
   return(list(data_table = data_table,
               plot = plot))
 }
@@ -4273,23 +4319,23 @@ plot_similarity_network = function(data_table,
                                    springConstant = 0.04,
                                    width = NULL,
                                    height = NULL
-                                   ) {
+) {
   # Get the affinity matrix
   data_table = base::as.matrix(stats::dist(x = data_table,
                                            method = distance_method))
   data_table = SNFtool::affinityMatrix(data_table, K = K_nearest_neighbors, sigma = sigma)
-
+  
   if (length(group_colors) == 1){
     if (group_colors == 'K clusters') {
       group_colors = SNFtool::spectralClustering(data_table, K = K_clusters)
     }
   }
-
+  
   edge_table = igraph::graph_from_adjacency_matrix(adjmatrix = data_table,
                                                    weighted= TRUE,
                                                    mode="undirected",
                                                    diag=F)
-
+  
   weights = igraph::E(edge_table)$weight
   max_weights = max(weights)
   edge_table = base::as.data.frame(igraph::as_edgelist(edge_table))
@@ -4297,12 +4343,12 @@ plot_similarity_network = function(data_table,
   edge_table$value = weights
   edge_table = edge_table[order(-edge_table$value),]
   edge_table = edge_table[1:ceiling(nrow(edge_table) * top_edges),]
-
+  
   # Create the node table with coloring
   node_table = data.frame(id = 1:ncol(data_table),
                           label = colnames(data_table))
   node_table$group = group_colors
-
+  
   # Node colors
   color_count = colors_switch(node_color_palette)
   node_color_palette = get_colors(color_count = color_count, color_palette = node_color_palette)
@@ -4310,25 +4356,25 @@ plot_similarity_network = function(data_table,
   node_color_palette = setNames(node_color_palette, unique(node_table$group))
   node_table$color = unname(node_color_palette[node_table$group])
   node_table$title = paste0(node_table$label, '<p>', node_table$group)
-
+  
   # Replace the string IDs in the edge table by numeric IDs
   nodes_dict = node_table$id
   names(nodes_dict) = node_table$label
   edge_table$from = unname(nodes_dict[edge_table$from])
   edge_table$to = unname(nodes_dict[edge_table$to])
   edge_table$title = paste0("Weight: ", round(edge_table$value, 5))
-
+  
   # Adapt edge width for visibility
   edge_table$value = edge_table$value * edge_magnifier
   node_table$opacity = node_opacity
   node_table$font.size = label_font_size
   node_table$borderWidth = 0
-
+  
   # # Produce the plot
   plot = visNetwork::visNetwork(node_table, edge_table, width = width, height = height)
   if (static_network) {
     g = igraph::graph_from_data_frame(edge_table, directed = TRUE)
-
+    
     # Catch singletons if there are any
     node_ids = base::unique(node_table$id)
     graph_nodes = igraph::V(g)$name
@@ -4336,16 +4382,16 @@ plot_similarity_network = function(data_table,
     if (length(singleton_nodes) > 0) {
       g = igraph::add_vertices(g, length(singleton_nodes), name=singleton_nodes)
     }
-
+    
     layout = igraph::layout_with_fr(g)
     nodes = data.frame(id = 1:igraph::vcount(g),
                        label = as.character(1:igraph::vcount(g)),
                        x = layout[,1] * 100,
                        y = -layout[,2] * 100)
-
+    
     node_table$x = nodes$x
     node_table$y = nodes$y
-
+    
     plot = visNetwork::visNodes(
       graph = plot,
       fixed = FALSE,
@@ -4354,9 +4400,9 @@ plot_similarity_network = function(data_table,
     )
     plot = visNetwork::visPhysics(graph = plot, enabled = FALSE)
     plot = visNetwork::visOptions(graph = plot, highlightNearest = TRUE, nodesIdSelection = TRUE)
-
+    
   } else {
-
+    
     if (solver == "barnesHut") {
       plot = visNetwork::visPhysics(plot,
                                     solver = "barnesHut",
@@ -4382,7 +4428,7 @@ plot_similarity_network = function(data_table,
     }
     plot = visNetwork::visLegend(graph = plot)
   }
-
+  
   out = list(
     node_table = node_table,
     edge_table = edge_table,
@@ -4395,7 +4441,7 @@ plot_similarity_network = function(data_table,
 plot_one_prot_or = function(r6, dimensions_obj, selection_list, input, output, session) {
   ns = session$ns
   ui_functions = ora_plotbox_switch_ui(selection_list = selection_list)
-
+  
   output$or_plotbox_field = shiny::renderUI({
     shiny::fluidRow(
       shiny::tagList(
@@ -4403,9 +4449,9 @@ plot_one_prot_or = function(r6, dimensions_obj, selection_list, input, output, s
       )
     )
   })
-
+  
   plot_servers = ora_plotbox_switch_server(selection_list = input$show_plots_or)
-
+  
   for (server_function in plot_servers) {
     server_function(r6, output, session)
   }
@@ -4423,7 +4469,7 @@ plot_two_prot_or = function(r6, dimensions_obj, selection_list, input, output, s
       )
     )
   })
-
+  
   plot_servers = ora_plotbox_switch_server(selection_list = input$show_plots_or)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4442,7 +4488,7 @@ plot_three_prot_or = function(r6, dimensions_obj, selection_list, input, output,
       )
     )
   })
-
+  
   plot_servers = ora_plotbox_switch_server(selection_list = input$show_plots_or)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4462,7 +4508,7 @@ plot_four_prot_or = function(r6, dimensions_obj, selection_list, input, output, 
       )
     )
   })
-
+  
   plot_servers = ora_plotbox_switch_server(selection_list = input$show_plots_or)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4473,7 +4519,7 @@ plot_four_prot_or = function(r6, dimensions_obj, selection_list, input, output, 
 plot_one_prot_gsea = function(r6, dimensions_obj, selection_list, input, output, session) {
   ns = session$ns
   ui_functions = ea_plotbox_switch_ui(selection_list = selection_list)
-
+  
   output$gsea_plotbox_field = shiny::renderUI({
     shiny::fluidRow(
       shiny::tagList(
@@ -4481,9 +4527,9 @@ plot_one_prot_gsea = function(r6, dimensions_obj, selection_list, input, output,
       )
     )
   })
-
+  
   plot_servers = ea_plotbox_switch_server(selection_list = input$show_plots_gsea)
-
+  
   for (server_function in plot_servers) {
     server_function(r6, output, session)
   }
@@ -4501,7 +4547,7 @@ plot_two_prot_gsea = function(r6, dimensions_obj, selection_list, input, output,
       )
     )
   })
-
+  
   plot_servers = ea_plotbox_switch_server(selection_list = input$show_plots_gsea)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4520,7 +4566,7 @@ plot_three_prot_gsea = function(r6, dimensions_obj, selection_list, input, outpu
       )
     )
   })
-
+  
   plot_servers = ea_plotbox_switch_server(selection_list = input$show_plots_gsea)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4540,7 +4586,7 @@ plot_four_prot_gsea = function(r6, dimensions_obj, selection_list, input, output
       )
     )
   })
-
+  
   plot_servers = ea_plotbox_switch_server(selection_list = input$show_plots_gsea)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4552,7 +4598,7 @@ plot_four_prot_gsea = function(r6, dimensions_obj, selection_list, input, output
 plot_one_prot = function(r6, dimensions_obj, selection_list, input, output, session) {
   ns = session$ns
   ui_functions = prot_plotbox_switch_ui(selection_list = selection_list)
-
+  
   output$plotbox_field = shiny::renderUI({
     shiny::fluidRow(
       shiny::tagList(
@@ -4560,7 +4606,7 @@ plot_one_prot = function(r6, dimensions_obj, selection_list, input, output, sess
       )
     )
   })
-
+  
   plot_servers = prot_plotbox_switch_server(selection_list = input$showPlots)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4579,7 +4625,7 @@ plot_two_prot = function(r6, dimensions_obj, selection_list, input, output, sess
       )
     )
   })
-
+  
   plot_servers = prot_plotbox_switch_server(selection_list = input$showPlots)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4598,7 +4644,7 @@ plot_three_prot = function(r6, dimensions_obj, selection_list, input, output, se
       )
     )
   })
-
+  
   plot_servers = prot_plotbox_switch_server(selection_list = input$showPlots)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4618,7 +4664,7 @@ plot_four_prot = function(r6, dimensions_obj, selection_list, input, output, ses
       )
     )
   })
-
+  
   plot_servers = prot_plotbox_switch_server(selection_list = input$showPlots)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4761,7 +4807,7 @@ plotbox_switch_server_lips = function(selection_list){
 plot_one_lips = function(r6, dimensions_obj, selection_list, input, output, session) {
   ns = session$ns
   ui_functions = plotbox_switch_ui_lips(selection_list = selection_list)
-
+  
   output$plotbox_field = shiny::renderUI({
     shiny::fluidRow(
       shiny::tagList(
@@ -4769,7 +4815,7 @@ plot_one_lips = function(r6, dimensions_obj, selection_list, input, output, sess
       )
     )
   })
-
+  
   plot_servers = plotbox_switch_server_lips(selection_list = input$showPlots)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4788,7 +4834,7 @@ plot_two_lips = function(r6, dimensions_obj, selection_list, input, output, sess
       )
     )
   })
-
+  
   plot_servers = plotbox_switch_server_lips(selection_list = input$showPlots)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4807,7 +4853,7 @@ plot_three_lips = function(r6, dimensions_obj, selection_list, input, output, se
       )
     )
   })
-
+  
   plot_servers = plotbox_switch_server_lips(selection_list = input$showPlots)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4827,7 +4873,7 @@ plot_four_lips = function(r6, dimensions_obj, selection_list, input, output, ses
       )
     )
   })
-
+  
   plot_servers = plotbox_switch_server_lips(selection_list = input$showPlots)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -4842,7 +4888,7 @@ reset_sample_filters = function(input, session, r6) {
     inputId = "non_samples_selection",
     selected = character(0)
   )
-
+  
   # Set manual row selection to None and update
   shiny::updateSelectizeInput(
     session = session,
@@ -4850,8 +4896,8 @@ reset_sample_filters = function(input, session, r6) {
     choices = rownames(r6$tables$meta_filtered),
     selected = character(0)
   )
-
-
+  
+  
   # Set the metacolumn value to None and update
   shiny::updateSelectInput(
     session = session,
@@ -4859,7 +4905,7 @@ reset_sample_filters = function(input, session, r6) {
     choices = unique(r6$tables$meta_filtered[,input$exclusion_meta_col]),
     selected = character(0)
   )
-
+  
   # Set metadata row exclusion to None
   shiny::updateSelectizeInput(
     session = session,
@@ -4875,7 +4921,7 @@ update_sample_filters = function(input, session, r6) {
     inputId = "selection_manual",
     choices = rownames(r6$tables$raw_meta)
   )
-
+  
   # Update available groups to filter
   if (input$exclusion_meta_col != "") {
     shiny::updateSelectInput(
@@ -4895,7 +4941,7 @@ update_lipid_filters = function(input, session, r6, prog_bars = T) {
     choices = unique(r6$tables$feature_table$lipid_class),
     selected = character(0)
   )
-
+  
   # Update manual selection
   shiny::updateSelectizeInput(
     session = session,
@@ -4904,7 +4950,7 @@ update_lipid_filters = function(input, session, r6, prog_bars = T) {
     choices = colnames(r6$tables$raw_data),
     selected = character(0)
   )
-
+  
   if (prog_bars) {
     shinyWidgets::updateProgressBar(
       session = session,
@@ -4912,7 +4958,7 @@ update_lipid_filters = function(input, session, r6, prog_bars = T) {
       value = ncol(r6$tables$raw_data),
       total = ncol(r6$tables$imp_data)
     )
-
+    
     shinyWidgets::updateProgressBar(
       session = session,
       id = "row_count_bar_data",
@@ -4926,26 +4972,26 @@ update_lipid_filters = function(input, session, r6, prog_bars = T) {
 sample_row_selection = function(input, r6) {
   # Initialise selection
   selected_rows = c()
-
+  
   # Get blank rows
   if ("Blanks" %in% input$non_samples_selection){
     selected_rows = c(selected_rows, r6$indices$rownames_blanks)
   }
-
+  
   # Get QC rows
   if ("QCs" %in% input$non_samples_selection){
     selected_rows = c(selected_rows, r6$indices$rownames_qcs)
   }
-
+  
   # Get Pool rows
   if ("Pools" %in% input$non_samples_selection){
     selected_rows = c(selected_rows, r6$indices$rownames_pools)
   }
-
+  
   # Add metadata and manual exclusions
   selected_rows = c(selected_rows,input$exclusion_meta_row,input$selection_manual)
   selected_rows = sort(unique(selected_rows))
-
+  
   return(selected_rows)
 }
 
@@ -4985,7 +5031,7 @@ snf_plotbox_switch_server = function(selection_list){
 snf_plot_one = function(r6, dimensions_obj, selection_list, input, output, session) {
   ns = session$ns
   ui_functions = snf_plotbox_switch_ui(selection_list = selection_list)
-
+  
   output$plotbox_field = shiny::renderUI({
     shiny::fluidRow(
       shiny::tagList(
@@ -4993,7 +5039,7 @@ snf_plot_one = function(r6, dimensions_obj, selection_list, input, output, sessi
       )
     )
   })
-
+  
   plot_servers = snf_plotbox_switch_server(selection_list = input$show_plots_snf)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -5012,7 +5058,7 @@ snf_plot_two = function(r6, dimensions_obj, selection_list, input, output, sessi
       )
     )
   })
-
+  
   plot_servers = snf_plotbox_switch_server(selection_list = input$show_plots_snf)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -5031,7 +5077,7 @@ snf_plot_three = function(r6, dimensions_obj, selection_list, input, output, ses
       )
     )
   })
-
+  
   plot_servers = snf_plotbox_switch_server(selection_list = input$show_plots_snf)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -5051,7 +5097,7 @@ snf_plot_four = function(r6, dimensions_obj, selection_list, input, output, sess
       )
     )
   })
-
+  
   plot_servers = snf_plotbox_switch_server(selection_list = input$show_plots_snf)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -5095,7 +5141,7 @@ mofa_plotbox_switch_server = function(selection_list){
 mofa_plot_one = function(r6, dimensions_obj, selection_list, input, output, session) {
   ns = session$ns
   ui_functions = mofa_plotbox_switch_ui(selection_list = selection_list)
-
+  
   output$plotbox_field = shiny::renderUI({
     shiny::fluidRow(
       shiny::tagList(
@@ -5103,7 +5149,7 @@ mofa_plot_one = function(r6, dimensions_obj, selection_list, input, output, sess
       )
     )
   })
-
+  
   plot_servers = mofa_plotbox_switch_server(selection_list = input$show_plots_mofa)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -5122,7 +5168,7 @@ mofa_plot_two = function(r6, dimensions_obj, selection_list, input, output, sess
       )
     )
   })
-
+  
   plot_servers = mofa_plotbox_switch_server(selection_list = input$show_plots_mofa)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -5141,7 +5187,7 @@ mofa_plot_three = function(r6, dimensions_obj, selection_list, input, output, se
       )
     )
   })
-
+  
   plot_servers = mofa_plotbox_switch_server(selection_list = input$show_plots_mofa)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -5161,7 +5207,7 @@ mofa_plot_four = function(r6, dimensions_obj, selection_list, input, output, ses
       )
     )
   })
-
+  
   plot_servers = mofa_plotbox_switch_server(selection_list = input$show_plots_mofa)
   for (server_function in plot_servers) {
     server_function(r6, output, session)
@@ -5170,7 +5216,7 @@ mofa_plot_four = function(r6, dimensions_obj, selection_list, input, output, ses
 
 #--------------------------------------------- MOFA explained variance plot ----
 plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', reverse_color_palette = F, title_font_size, y_label_font_size, x_label_font_size, y_tick_font_size, x_tick_font_size, legend_font_size, width = NULL, height = NULL) {
-
+  
   # Fonts
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
@@ -5179,17 +5225,17 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
   y_axis_title = base::ifelse(y_label_font_size > 0, "Omics", "")
   title = base::ifelse(title_font_size > 0, "Explained variance", "")
   secondary_title = "Var. Expl. (%)"
-
+  
   factor_sums = base::rowSums(data_table)
   omics_sums = base::colSums(data_table)
-
+  
   # Get color palette
   color_count = colors_switch(color_palette)
   colors = get_colors(color_count = color_count, color_palette = color_palette)
   if (reverse_color_palette) {
     colors = base::rev(colors)
   }
-
+  
   heatmap = plotly::plot_ly(
     x = colnames(data_table),
     y = rownames(data_table),
@@ -5201,8 +5247,8 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
     width = width,
     height = height
   )
-
-
+  
+  
   heatmap = plotly::layout(
     p = heatmap,
     xaxis = list(
@@ -5213,7 +5259,7 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
       showticklabels = xtick_show,
       tickfont = list(size = x_tick_font_size)
     ),
-
+    
     yaxis = list(
       title = list(
         text = y_axis_title,
@@ -5225,8 +5271,8 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)'
   )
-
-
+  
+  
   omics_bars = plotly::plot_ly(width = width, height = height)
   omics_bars = plotly::add_trace(
     p = omics_bars,
@@ -5238,7 +5284,7 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
     marker = list(color = '#ff9b5f'),
     showlegend = F
   )
-
+  
   omics_bars = plotly::layout(
     p = omics_bars,
     xaxis = list(
@@ -5258,9 +5304,9 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
       zeroline = FALSE
     )
   )
-
-
-
+  
+  
+  
   factors_bars = plotly::plot_ly(width = width, height = height)
   factors_bars = plotly::add_trace(
     p = factors_bars,
@@ -5273,7 +5319,7 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
     orientation = 'h',
     showlegend = F
   )
-
+  
   factors_bars = plotly::layout(
     p = factors_bars,
     xaxis = list(
@@ -5293,11 +5339,11 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
       zeroline = FALSE
     )
   )
-
-
-
+  
+  
+  
   blank_plot = create_blank_plot()
-
+  
   plot = plotly::subplot(
     list(omics_bars, blank_plot,
          heatmap, factors_bars),
@@ -5310,7 +5356,7 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
     widths = c(0.8, 0.2),
     heights = c(0.2, 0.8)
   )
-
+  
   plot = plotly::layout(
     p = plot,
     title = list(
@@ -5325,14 +5371,14 @@ plot_mofa_explained_variance = function(data_table, color_palette = 'Blues', rev
 #--------------------------------------------------------- MOFA factor plot ----
 
 create_factor_plot = function(factor_table, factor_name, marker_size = 10, opacity = 1, add_violin = TRUE, violin_alpha = 0.5, title_font_size, y_label_font_size, x_label_font_size, y_tick_font_size, x_tick_font_size, legend_font_size, legend_show = T, width = NULL, height = NULL) {
-
+  
   # Fonts
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
   x_axis_title = base::ifelse(x_label_font_size > 0, factor_name, "")
   y_axis_title = base::ifelse(y_label_font_size > 0, 'Factor weight', "")
   title = base::ifelse(title_font_size > 0, "Factor weights", "")
-
+  
   # Filter table for the given factor
   tmp_table = factor_table[factor_table$factor == factor_name,]
   # Initialize an empty plot
@@ -5342,7 +5388,7 @@ create_factor_plot = function(factor_table, factor_name, marker_size = 10, opaci
     grp_table = tmp_table[tmp_table[,"group"] == grp,]
     grp_numeric = grp_table$group_numeric[1]
     grp_color = grp_table$color[1]
-
+    
     if (add_violin) {
       plot = plotly::add_trace(p = plot,
                                y = grp_table$value,
@@ -5359,8 +5405,8 @@ create_factor_plot = function(factor_table, factor_name, marker_size = 10, opaci
                                showlegend = F,
                                orientation = 'v')
     }
-
-
+    
+    
     plot = plotly::add_trace(p = plot,
                              type = "scatter",
                              mode = "markers",
@@ -5388,7 +5434,7 @@ create_factor_plot = function(factor_table, factor_name, marker_size = 10, opaci
                           showticklabels = ytick_show,
                           tickfont = list(size = y_tick_font_size)
                         ),
-
+                        
                         xaxis = list(
                           title = list(
                             text = x_axis_title,
@@ -5397,7 +5443,7 @@ create_factor_plot = function(factor_table, factor_name, marker_size = 10, opaci
                           showticklabels = F,
                           tickfont = list(size = x_tick_font_size)
                         ),
-
+                        
                         legend = list(
                           font = list(
                             size = legend_font_size
@@ -5409,49 +5455,49 @@ create_factor_plot = function(factor_table, factor_name, marker_size = 10, opaci
   return(plot)
 }
 plot_factor_plot = function(model, sample_metadata, factors, scale = F, groups, show_missing = F, color_palette = 'Spectral', marker_size = 10, opacity = 1, add_violin = T, show_legend = T, violin_alpha = 0.5, title_font_size, y_label_font_size, x_label_font_size, y_tick_font_size, x_tick_font_size, legend_font_size, width = NULL, height = NULL) {
-
+  
   factors = MOFA2::factors_names(model)[factors]
   factor_table = MOFA2::get_factors(model, factors = factors, groups = "all",
                                     as.data.frame = TRUE)
-
+  
   factor_table$group = sample_metadata[factor_table$sample, groups]
-
+  
   # Check on the number of groups (must be < 10)
   if (length(base::unique(factor_table$group)) > 10) {
     base::warning('More than 10 groups supplied, displaying as a single group.')
     factor_table$group = 'Samples'
   }
-
+  
   # If there are missing values
   factor_table$group[factor_table$group == ""] = NA
   if (show_missing) {
     factor_table$group[base::is.na(factor_table$group)] = 'NA'
-
+    
   } else {
     factor_table = factor_table[!base::is.na(factor_table$group),]
   }
-
-
+  
+  
   factor_table$group_numeric = as.numeric(as.factor(factor_table$group))
   factor_table$hover = paste0(factor_table$sample,
                               '\n',
                               round(factor_table$value, 4))
-
+  
   colors = get_color_palette(groups = factor_table$group,
                              color_palette = color_palette,
                              reverse_color_palette = F,
                              force_scale = F,
                              force_list = T)
   factor_table$color = unname(colors[factor_table$group])
-
+  
   # Scale
   if (scale) {
     factor_table$value = factor_table$value/max(abs(factor_table$value))
   }
-
+  
   # Plot
   legend_show = base::ifelse(legend_font_size > 0, T, F)
-
+  
   if (length(factors) > 1) {
     plot_list = list()
     for (fact in factors) {
@@ -5500,16 +5546,16 @@ plot_factor_plot = function(model, sample_metadata, factors, scale = F, groups, 
 
 #----------------------------------------------- MOFA combined factors plot ----
 create_factor_density_plot = function(factor_table, factor_name, color_palette, area_alpha = 0.5, show_legend = T, show_yaxis_label = T, y_label_font_size = 13, y_tick_font_size = 10, x_label_font_size = 13, x_tick_font_size = 10, legend_font_size = 10, width = NULL, height = NULL){
-
+  
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
   x_axis_title = base::ifelse(x_label_font_size > 0, factor_name, "")
   y_axis_title = base::ifelse(y_label_font_size > 0, factor_name, "")
-
+  
   if (!show_yaxis_label) {
     y_axis_title = NULL
   }
-
+  
   plot = plotly::plot_ly(width = width, height = height)
   for (grp in unique(factor_table$group)) {
     grp_idx = which(factor_table$group == grp)
@@ -5530,7 +5576,7 @@ create_factor_density_plot = function(factor_table, factor_name, color_palette, 
       showlegend = show_legend
     )
   }
-
+  
   plot = plotly::layout(
     p = plot,
     xaxis = list(
@@ -5541,7 +5587,7 @@ create_factor_density_plot = function(factor_table, factor_name, color_palette, 
       showticklabels = xtick_show,
       tickfont = list(size = x_tick_font_size)
     ),
-
+    
     yaxis = list(
       title = list(
         text = y_axis_title,
@@ -5556,26 +5602,26 @@ create_factor_density_plot = function(factor_table, factor_name, color_palette, 
       )
     )
   )
-
+  
   return(plot)
 }
 
 create_factor_comparison_plot = function(factor_table, factor_1, factor_2, color_palette, marker_size, marker_opacity, show_legend = T, show_yaxis_label = T, y_label_font_size = 13, y_tick_font_size = 10, x_label_font_size = 13, x_tick_font_size = 10, legend_font_size = 10, width = NULL, height = NULL) {
-
+  
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
   x_axis_title = base::ifelse(x_label_font_size > 0, factor_2, "")
   y_axis_title = base::ifelse(y_label_font_size > 0, factor_1, "")
-
-
+  
+  
   if (!show_yaxis_label) {
     y_axis_title = NULL
     # x_axis_title = NULL
   }
-
-
+  
+  
   factor_table$hover = paste0(rownames(factor_table), '\n', factor_2, ': ', round(factor_table[,factor_1], 4), '\n', factor_1, ': ', round(factor_table[,factor_2], 4))
-
+  
   plot = plotly::plot_ly(width = width, height = height)
   for (grp in unique(factor_table$group)) {
     grp_idx = which(factor_table$group == grp)
@@ -5596,7 +5642,7 @@ create_factor_comparison_plot = function(factor_table, factor_1, factor_2, color
       showlegend = show_legend
     )
   }
-
+  
   plot = plotly::layout(
     p = plot,
     xaxis = list(
@@ -5607,7 +5653,7 @@ create_factor_comparison_plot = function(factor_table, factor_1, factor_2, color
       showticklabels = xtick_show,
       tickfont = list(size = x_tick_font_size)
     ),
-
+    
     yaxis = list(
       title = list(
         text = y_axis_title,
@@ -5622,47 +5668,47 @@ create_factor_comparison_plot = function(factor_table, factor_1, factor_2, color
       )
     )
   )
-
-
+  
+  
   return(plot)
 }
 
 plot_combined_factors_plot = function(model, factors, sample_metadata, groups, scale = F, show_missing = F, color_palette = 'Spectral', marker_size = 10, marker_opacity = 1, area_alpha = 0.5, title_font_size, y_label_font_size, x_label_font_size, y_tick_font_size, x_tick_font_size, legend_font_size, width = NULL, height = NULL) {
-
+  
   legend_show = base::ifelse(legend_font_size > 0, T, F)
   title = base::ifelse(title_font_size > 0, "Combined factors", "")
-
+  
   label_counters = 1
   for (i in 1:(length(factors)-1)) {
     label_counters = c(label_counters, label_counters[length(label_counters)] + length(factors))
   }
-
+  
   factors = MOFA2:::.check_and_get_factors(model, factors)
   factor_table = MOFA2::get_factors(model, factors = factors, groups = "all",
                                     as.data.frame = F)
   factor_table = as.data.frame(factor_table$group1)
   factor_table$group = sample_metadata[rownames(factor_table), groups]
-
+  
   # If there are missing values
   factor_table$group[factor_table$group == ""] = NA
   if (show_missing) {
     factor_table$group[base::is.na(factor_table$group)] = 'NA'
-
+    
   } else {
     factor_table = factor_table[!base::is.na(factor_table$group),]
   }
-
+  
   if (length(unique(factor_table$group)) > nrow(factor_table)/2) {
     warning('Less than two samples per group, removing groups')
     factor_table$group = 1
   }
-
+  
   if (scale) {
     for (factor in factors) {
       factor_table[[factor]] = factor_table[[factor]]/max(abs(factor_table[[factor]]))
     }
   }
-
+  
   # unique_groups = unique(factor_table$group)
   # color_count = colors_switch(color_palette)
   # color_palette = get_colors(color_count = color_count, color_palette = color_palette)
@@ -5674,7 +5720,7 @@ plot_combined_factors_plot = function(model, factors, sample_metadata, groups, s
                              reverse_color_palette = F,
                              force_scale = F,
                              force_list = T)
-
+  
   if (length(factors) > 1) {
     counter = 1
     plot_list = list()
@@ -5703,11 +5749,11 @@ plot_combined_factors_plot = function(model, factors, sample_metadata, groups, s
                                                                           x_tick_font_size = x_tick_font_size,
                                                                           legend_font_size = legend_font_size,
                                                                           show_legend = legend_show)
-
+          
           legend_show = F
-
+          
         } else {
-
+          
           if (counter %in% label_counters) {
             show_yaxis_label = T
           } else {
@@ -5748,8 +5794,8 @@ plot_combined_factors_plot = function(model, factors, sample_metadata, groups, s
                                       legend_font_size = legend_font_size,
                                       show_legend = legend_show)
   }
-
-
+  
+  
   plot = plotly::layout(
     p = plot,
     title = list(text = title,
@@ -5757,7 +5803,7 @@ plot_combined_factors_plot = function(model, factors, sample_metadata, groups, s
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)'
   )
-
+  
   return(list(plot = plot,
               table = factor_table))
 }
@@ -5765,7 +5811,7 @@ plot_combined_factors_plot = function(model, factors, sample_metadata, groups, s
 
 #----------------------------------------------------- MOFA feature weights ----
 plot_feature_weights = function(model, omics, feature_metadata, factors = 1, groups = NULL, scale = T, abs = F, color_palette = 'Spectral', reverse_color_palette = T, marker_size = 10, marker_opacity = 1, title_font_size = 10, y_label_font_size = 10, x_label_font_size = 10, y_tick_font_size = 10, x_tick_font_size = 10, legend_font_size = 10, width = NULL, height = NULL) {
-
+  
   # Process fonts
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
@@ -5773,16 +5819,16 @@ plot_feature_weights = function(model, omics, feature_metadata, factors = 1, gro
   x_axis_title = base::ifelse(x_label_font_size > 0, "Weight", "")
   y_axis_title = base::ifelse(y_label_font_size > 0, "Rank", "")
   title = base::ifelse(title_font_size > 0, paste0('Feature weights - Omics: ', omics, ', Factor: ', factors), "")
-
+  
   factors = MOFA2:::.check_and_get_factors(model, factors)
   factor_table = MOFA2::get_weights(model, views = omics, factors = factors,
                                     as.data.frame = F)
   factor_table = as.data.frame(factor_table[[1]])
-
+  
   if (scale && sum(factor_table[,factors] > 0) > 0) {
     factor_table[,factors] = factor_table[,factors]/max(abs(factor_table[,factors]))
   }
-
+  
   if (!is.null(groups)) {
     if (groups == "factor_weights") {
       factor_table$group = factor_table[,factors]
@@ -5792,31 +5838,31 @@ plot_feature_weights = function(model, omics, feature_metadata, factors = 1, gro
       factor_table$group = "None"
     }
   }
-
-
+  
+  
   if (abs) {
     factor_table[,factors] = abs(factor_table[,factors])
     plot_range = c(-0.1,max(abs(factor_table[,factors])) + 0.1)
   } else {
     plot_range = c(-max(abs(factor_table[,factors])) -0.1 ,max(abs(factor_table[,factors])+0.1))
   }
-
+  
   factor_table$rank = base::rank(factor_table[,factors])
-
+  
   group_values = factor_table$group
   unique_groups = sort(unique(group_values))
-
+  
   color_object = get_color_palette(groups = group_values,
                                    color_palette = color_palette,
                                    reverse_color_palette = reverse_color_palette)
-
+  
   if (groups != 'factor_weights') {
     factor_table$hover = paste0(rownames(factor_table), '\nRank: ', factor_table$rank, '\nWeight: ', round(factor_table[[factors]], 4), '\nGroup: ', factor_table$group)
   } else {
     factor_table$hover = paste0(rownames(factor_table), '\nRank: ', factor_table$rank, '\nWeight: ', round(factor_table[[factors]], 4))
   }
-
-
+  
+  
   if (typeof(color_object) == 'list') {
     fig = plotly::plot_ly(x = factor_table[,factors],
                           y = factor_table$rank,
@@ -5850,16 +5896,16 @@ plot_feature_weights = function(model, omics, feature_metadata, factors = 1, gro
                               hoverinfo = 'text',
                               showlegend = legend_show)
     }
-
+    
   }
-
-
-
+  
+  
+  
   fig = plotly::layout(
     p = fig,
     title = list(text = title,
                  font = list(size = title_font_size)),
-
+    
     xaxis = list(
       title = list(
         text = x_axis_title,
@@ -5882,7 +5928,7 @@ plot_feature_weights = function(model, omics, feature_metadata, factors = 1, gro
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)'
   )
-
+  
   return(list(plot = fig,
               table = factor_table))
 }
@@ -5890,57 +5936,57 @@ plot_feature_weights = function(model, omics, feature_metadata, factors = 1, gro
 
 #------------------------------------------------- MOFA feature top weights ----
 plot_feature_top_weights = function(model, omics, feature_table, factors = 1, nfeatures = 20, abs = TRUE, scale = TRUE, sign = "all", groups, color_palette = 'Spectral', reverse_color_palette = F, marker_size = 10, marker_opacity = 1, title_font_size, y_label_font_size, x_label_font_size, y_tick_font_size, x_tick_font_size, legend_font_size, width = NULL, height = NULL) {
-
+  
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
   legend_show = base::ifelse(legend_font_size > 0, T, F)
   x_axis_title = base::ifelse(x_label_font_size > 0, "Factor weight", "")
   y_axis_title = base::ifelse(y_label_font_size > 0, "Features", "")
   title = base::ifelse(title_font_size > 0, paste0('Omics: ', omics, ', Factor: ', factors), "")
-
-
+  
+  
   # Checks
   if (!(sign %in% c('all', 'negative', 'positive'))){
     stop('sign should be one of all, negative or positive')
   }
-
-
+  
+  
   if (nfeatures <= 0) {
     stop("'nfeatures' has to be greater than 0")
   }
   if (sign == "all") {
     abs = TRUE
   }
-
+  
   factors = MOFA2:::.check_and_get_factors(object = model, factors = factors)
   factor_table = MOFA2::get_weights(object = model, factors = factors, views = omics,
                                     as.data.frame = F)
   factor_table = as.data.frame(factor_table[[1]])
-
+  
   if (scale) {
     factor_table[,factors] = factor_table[,factors]/max(abs(factor_table[,factors]))
   }
-
+  
   factor_table = factor_table[factor_table[,factors] != 0, ,drop = FALSE]
   factor_table$sign = base::ifelse(factor_table[,factors] > 0, "positive", "negative")
-
+  
   if (sign == "positive") {
     factor_table = factor_table[factor_table[,factors] > 0, ,drop = FALSE]
   } else if (sign == "negative") {
     factor_table = factor_table[factor_table[,factors] < 0, ,drop = FALSE]
   }
-
+  
   if (abs) {
     factor_table$value = abs(factor_table[,factors])
   } else {
     factor_table$value = factor_table[,factors]
   }
-
+  
   factor_table = factor_table[order(-factor_table$value), ]
   factor_table$rank = 1:nrow(factor_table)
-
+  
   rownames(factor_table) = base::gsub(paste0('_', omics), '', rownames(factor_table))
-
+  
   if (groups == 'sign') {
     factor_table$groups = factor_table$sign
     factor_table$hover = paste0(rownames(factor_table), '\nRank: ', factor_table$rank, '\nSign: ', factor_table$sign, '\nWeight: ',  round(factor_table[[factors]],4))
@@ -5948,7 +5994,7 @@ plot_feature_top_weights = function(model, omics, feature_table, factors = 1, nf
     factor_table$groups = feature_table[rownames(factor_table), groups]
     factor_table$hover = paste0(rownames(factor_table), '\nRank: ', factor_table$rank, '\nSign: ', factor_table$sign, '\nWeight: ',  round(factor_table[[factors]],4), '\n', groups, ': ', factor_table$groups)
   }
-
+  
   # Keep top features
   if (nfeatures > nrow(factor_table)) {
     nfeatures = nrow(factor_table)
@@ -5956,8 +6002,8 @@ plot_feature_top_weights = function(model, omics, feature_table, factors = 1, nf
   } else {
     factor_table = factor_table[1:nfeatures,]
   }
-
-
+  
+  
   group_values = factor_table$groups
   unique_groups = sort(unique(group_values))
   if (groups == 'sign') {
@@ -5968,9 +6014,9 @@ plot_feature_top_weights = function(model, omics, feature_table, factors = 1, nf
                                      color_palette = color_palette,
                                      reverse_color_palette = reverse_color_palette)
   }
-
+  
   min_value = min(factor_table$value)
-
+  
   if (typeof(color_object) == 'character') {
     plot = plotly::plot_ly(width = width, height = height)
     for (group in unique_groups) {
@@ -6028,12 +6074,12 @@ plot_feature_top_weights = function(model, omics, feature_table, factors = 1, nf
       hoverinfo = 'text'
     )
   }
-
+  
   plot = plotly::layout(
     p = plot,
     title = list(text = title,
                  font = list(size = title_font_size)),
-
+    
     xaxis = list(
       title = list(
         text = x_axis_title,
@@ -6068,14 +6114,14 @@ plot_feature_top_weights = function(model, omics, feature_table, factors = 1, nf
 
 #------------------------------------------------------------- MOFA heatmap ----
 plot_mofa_heatmap = function(model, omics, samples_annotation_table, features_annotation_table, factor = 1, features = 50, feature_annotations = NULL, sample_annotations = NULL, imputed = FALSE, denoise = FALSE, distance_method = 'euclidean', clustering_method = 'ward.D2', p_minkowski = 2, k_clusters_samples = 1, k_clusters_features = 1, center = F, apply_clustering = TRUE, color_palette = 'Spectral', reverse_color_palette = F, title_font_size = 0, y_label_font_size = 17, x_label_font_size = 17, y_tick_font_size = 0, x_tick_font_size = 0, width = NULL, height = NULL) {
-
+  
   # Fonts
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
   x_axis_title = base::ifelse(x_label_font_size > 0, "Samples", "")
   y_axis_title = base::ifelse(y_label_font_size > 0, "Features", "")
   title = base::ifelse(title_font_size > 0, "MOFA heatmap", "")
-
+  
   if (features <= 1) {
     stop("Select more than one features")
   }
@@ -6083,19 +6129,19 @@ plot_mofa_heatmap = function(model, omics, samples_annotation_table, features_an
     features = nrow(features_annotation_table)
     warning(paste0("Maximum number of features exceeded, only using ", features))
   }
-
+  
   factor = MOFA2:::.check_and_get_factors(model, factor)
   factor_table = MOFA2::get_weights(object = model,
                                     views = omics,
                                     factors = factor,
                                     as.data.frame = FALSE)
   factor_table = as.data.frame(factor_table[[1]])
-
+  
   sample_values = MOFA2::get_factors(model)[[1]][,factor,drop = F]
   sample_values = sample_values[!is.na(sample_values), ,drop = F]
-
-
-
+  
+  
+  
   if (denoise) {
     data = MOFA2::predict(model, views = omics, groups = 'all')[[omics]][[1]]
   } else if(imputed) {
@@ -6107,21 +6153,21 @@ plot_mofa_heatmap = function(model, omics, samples_annotation_table, features_an
   } else {
     data = MOFA2::get_data(object = model, views = omics, groups = 'all')[[omics]][[1]]
   }
-
-
+  
+  
   factor_table$abs_value = abs(factor_table[,factor])
   factor_table = factor_table[order(-abs(factor_table$abs_value)), ]
   top_features = rownames(factor_table)[1:features]
-
+  
   data = data[top_features, ]
   data = data[, rownames(sample_values)]
   data = data[, apply(data, 2, function(x) !all(is.na(x)))]
-
+  
   order_samples = names(sort(sample_values[,factor], decreasing = TRUE))
   order_samples = order_samples[order_samples %in% colnames(data)]
   data = data[, order_samples]
-
-
+  
+  
   # Set zmax and zmin
   if (center) {
     if (min(data, na.rm = T) < 0) {
@@ -6135,8 +6181,8 @@ plot_mofa_heatmap = function(model, omics, samples_annotation_table, features_an
     zmax = max(data, na.rm = T)
     zmin = min(data, na.rm = T)
   }
-
-
+  
+  
   # Annotations
   if (!is.null(sample_annotations)) {
     sample_annotations_data = samples_annotation_table[colnames(data), sample_annotations, drop = F]
@@ -6150,8 +6196,8 @@ plot_mofa_heatmap = function(model, omics, samples_annotation_table, features_an
     feature_annotations_data = NULL
   }
   rownames(data) = base::gsub(paste0('_', omics), '', rownames(data))
-
-
+  
+  
   # Set the clustering
   if (apply_clustering) {
     dendrogram_list = "both"
@@ -6168,18 +6214,18 @@ plot_mofa_heatmap = function(model, omics, samples_annotation_table, features_an
     Colv = NULL
     Rowv = NULL
   }
-
+  
   data_filtered = data
   data_filtered[data > zmax] = zmax
   data_filtered[data < zmin] = zmin
-
+  
   color_count = colors_switch(color_palette)
   colors = get_colors(color_count = color_count, color_palette = color_palette)
   if (reverse_color_palette) {
     colors = base::rev(colors)
   }
-
-
+  
+  
   plot = heatmaply::heatmaply(x = data_filtered,
                               colors = colors,
                               limits = c(zmin, zmax),
@@ -6199,28 +6245,28 @@ plot_mofa_heatmap = function(model, omics, samples_annotation_table, features_an
                               showticklabels = c(xtick_show, ytick_show),
                               width = width,
                               height = height)
-
+  
   plot = plotly::layout(
     p = plot,
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)'
   )
-
+  
   return(list(plot = plot,
               table = data))
 }
 #-------------------------------------------------------- MOFA Scatter plot ----
 plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", sample_annotations, show_legend = TRUE, marker_size = 10, marker_opacity = 1, add_lm = TRUE, imputed = FALSE, fixed_axes = F, color_palette = 'Turbo', reverse_palette = F, width = NULL, height = NULL) {
-
+  
   if (features > 25) {
     stop("Maximum displayed features = 25")
   }
-
+  
   factor = MOFA2:::.check_and_get_factors(model, factor)
-
+  
   feature_weights = as.data.frame(MOFA2::get_weights(model)[[omics]][, factor])
   colnames(feature_weights) = 'weights'
-
+  
   if (imputed) {
     model = MOFA2::impute(object = model,
                           views = omics,
@@ -6230,51 +6276,51 @@ plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", 
   } else {
     sample_feature_weights = as.data.frame(model@data[[omics]][[1]])
   }
-
+  
   sample_weights = MOFA2::get_factors(model, factors = factor, groups = 'all',
                                       as.data.frame = TRUE)
   sample_weights = sample_weights[, c("sample", "value")]
   colnames(sample_weights)  = c('sample', 'sample_weights')
-
-
+  
+  
   feature_weights$abs_weights = abs(feature_weights$weights)
-
+  
   if (sign == "positive") {
     feature_weights = feature_weights[feature_weights$weights > 0,]
   } else if (sign == "negative") {
     feature_weights = feature_weights[feature_weights$weights < 0,]
   }
-
+  
   feature_weights = feature_weights[order(-feature_weights$abs_weights),]
-
+  
   if (features > nrow(feature_weights)) {
     warning("Requested more than the max features available, displaying all.")
     features = nrow(feature_weights)
   }
-
+  
   feature_weights = feature_weights[1:features,]
-
+  
   sample_weights = merge(sample_weights, MOFA2:::.set_colorby(model, sample_annotations), by = "sample")
   colnames(sample_weights) = c("sample", "sample_weights", "sample_annotations")
-
+  
   if (imputed) {
     data_table = MOFA2::get_imputed_data(model, groups = 'all', views = omics, as.data.frame = TRUE)
   } else {
     data_table = MOFA2::get_data(model, groups = 'all' ,as.data.frame = TRUE)
   }
   data_table = data_table[data_table$feature %in% rownames(feature_weights),]
-
+  
   data_table$sample = as.character(data_table$sample)
   data_table = dplyr::left_join(sample_weights, data_table, by = "sample")
   data_table = data_table[!is.na(data_table$value), ]
-
+  
   # Get the color palette
   colors = get_color_palette(groups = data_table$sample_annotations,
                              color_palette = color_palette,
                              reverse_color_palette = reverse_palette,
                              force_scale = F,
                              force_list = F)
-
+  
   data_table$hover = paste0(
     data_table$sample,
     "\n",
@@ -6284,18 +6330,18 @@ plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", 
     "Feature measurement value: ",
     round(data_table$value,1)
   )
-
-
+  
+  
   subplot_shape = calculate_subplot_grid_dimensions(total_plots = features)
-
+  
   font_size_regression = stats::lm(y ~ x, data = data.frame(x = c(1,4),
                                                             y = c(16,9)))
   box_y0_regression = stats::lm(y ~ x, data = data.frame(x = c(1,4),
                                                          y = c(0.90,0.83)))
-
+  
   font_size = unname(stats::predict(font_size_regression, data.frame(x = subplot_shape$rows)))
   box_y0 = unname(stats::predict(box_y0_regression, data.frame(x = subplot_shape$rows)))
-
+  
   min_y = round(min(data_table$value, na.rm = T)) * 1.4
   max_y = round(max(data_table$value, na.rm = T)) * 1.4
   min_x = round(min(data_table$sample_weights, na.rm = T)) * 1.4
@@ -6303,14 +6349,14 @@ plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", 
   x_range = c(min_x, max_x)
   y_range = c(min_y, max_y)
   mid_val = (min_x + max_x) / 2
-
+  
   plot_list = list()
-
+  
   data_table$feature = gsub(paste0('_', omics), '', data_table$feature)
-
+  
   for (feature in unique(data_table$feature)){
     feature_data = data_table[data_table$feature == feature, ]
-
+    
     if (add_lm) {
       regression_model = stats::lm(feature_data$value ~ feature_data$sample_weights)
       confidence_interval = stats::predict(regression_model, interval = "confidence")
@@ -6319,16 +6365,16 @@ plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", 
       corr = base::round(correlation$estimate, 2)
       p_val = base::format(correlation$p.value, scientific = TRUE, digits = 3)
     }
-
-
+    
+    
     if (!fixed_axes) {
       x_range = NULL
       y_range = NULL
       mid_val = (min(feature_data$sample_weights, na.rm = T) + max(feature_data$sample_weights, na.rm = T)) / 2
     }
-
+    
     feature_plot = plotly::plot_ly(width = width, height = height)
-
+    
     if (add_lm) {
       feature_plot = plotly::add_trace(
         p = feature_plot,
@@ -6339,7 +6385,7 @@ plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", 
         line = list(color = 'blue'),
         showlegend = F
       )
-
+      
       feature_plot = plotly::add_ribbons(
         p = feature_plot,
         ymin = confidence_interval[, "lwr"],
@@ -6350,8 +6396,8 @@ plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", 
         showlegend = F
       )
     }
-
-
+    
+    
     for (group in unique(feature_data$sample_annotations)){
       group_data = feature_data[feature_data$sample_annotations == group,]
       feature_plot = plotly::add_trace(
@@ -6423,7 +6469,7 @@ plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", 
         )
       )
     )
-
+    
     if (add_lm) {
       feature_plot = plotly::layout(
         p = feature_plot,
@@ -6444,21 +6490,21 @@ plot_mofa_scatter_plot = function(model, factor, omics, features, sign = "all", 
         )
       )
     }
-
-
+    
+    
     plot_list[[length(plot_list) + 1]] = feature_plot
   }
-
+  
   plot = plotly::subplot(plot_list,
                          nrows = subplot_shape$rows,
                          shareX = F,
                          shareY = F,
                          titleX = TRUE,
                          titleY = TRUE)
-
+  
   return(list(plot = plot,
               table = data_table))
-
+  
 }
 #------------------------------------------------------------- Volcano plot ----
 volcano_main = function(fc_vals = volcano_table$fold_change,
@@ -6481,18 +6527,18 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
                         x_tick_font_size = 15,
                         legend_font_size = 15,
                         opacity = 1) {
-
+  
   # Checks
   if (!(displayed_plot %in% c('main', 'all', 'left', 'right', 'top'))) {
     stop("displayed_plot should be one of ['main', 'all', 'left', 'right', 'top']")
   }
-
+  
   data = data.frame(
     "fold_change" = fc_vals,
     "p_values" = p_vals,
     "names" = names
   )
-
+  
   if(nchar(left_label) != nchar(right_label)) {
     if(nchar(left_label) > nchar(right_label)) {
       num = nchar(left_label) - nchar(right_label)
@@ -6508,33 +6554,33 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
     left_label = paste0("&#8656;&nbsp;&nbsp;&nbsp;", left_label)
   }
   plot_label = paste0(left_label, ' - ', right_label)
-
+  
   # Format data
   data$log2_fold_change = log2(data$fold_change)
   data$log10_p_values = -log10(data$p_values)
-
-
-
+  
+  
+  
   if (is.null(groups)) {
     data$groups = 'Inconclusive'
     data$groups[(data$p_values > p_val_threshold) & (data$log2_fold_change < log2(fc_threshold)) & (data$log2_fold_change > -log2(fc_threshold))] = 'Not significant'
     data$groups[((data$p_values < p_val_threshold) | (is.na(data$p_values))) & (data$log2_fold_change > log2(fc_threshold))] = "Overexpressed"
     data$groups[((data$p_values < p_val_threshold) | (is.na(data$p_values))) & (data$log2_fold_change < -log2(fc_threshold))] = "Underexpressed"
-
+    
     # Add count data
     replacement_vector = table(data$groups)
     original_names = names(replacement_vector)
     replacement_vector = paste0(names(replacement_vector), ' (', replacement_vector, ')')
     names(replacement_vector) = original_names
     data$groups = replacement_vector[as.character(data$groups)]
-
-
+    
+    
     color_object = setNames(c('#787878', '#bebebe', '#FF0000', '#0000FF'), sort(unique( data$groups)))
     data$color = unname(color_object[data$groups])
-
+    
   } else {
     data$groups = groups
-
+    
     # Add count data
     replacement_vector = table(data$groups)
     original_names = names(replacement_vector)
@@ -6544,11 +6590,11 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
                                      color_palette = color_palette,
                                      reverse_color_palette = reverse_palette,
                                      force_list = T
-                                     )
+    )
     data$color = color_object[as.character(data$groups)]
     data$groups = replacement_vector[as.character(data$groups)]
   }
-
+  
   # Produce the data tables & plots
   if (length(which(is.na(data$log10_p_values))) > 0) { # Top violin
     top_data = data[which(is.na(data$log10_p_values)),]
@@ -6570,14 +6616,14 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
     } else {
       top_data = NULL
     }
-
-
+    
+    
   } else {top_data = NULL}
-
+  
   if (length(which(data$log2_fold_change == -Inf)) > 0) { # Left violin
     left_data = data[which(data$log2_fold_change == -Inf),]
     data = data[-which(data$log2_fold_change == -Inf),]
-
+    
     left_violin = plot_volcano_violin(data = left_data,
                                       threshold = -log10(p_val_threshold),
                                       side = 'left',
@@ -6586,13 +6632,13 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
                                       x_label_font_size = x_label_font_size,
                                       y_label_font_size = y_label_font_size,
                                       legend_font_size = 0)
-
+    
   } else {left_data = NULL}
-
+  
   if (length(which(data$log2_fold_change == Inf)) > 0) { # right violin
     right_data = data[which(data$log2_fold_change == Inf),]
     data = data[-which(data$log2_fold_change == Inf),]
-
+    
     right_violin = plot_volcano_violin(data = right_data,
                                        threshold = -log10(p_val_threshold),
                                        side = 'right',
@@ -6601,11 +6647,11 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
                                        x_label_font_size = x_label_font_size,
                                        y_label_font_size = y_label_font_size,
                                        legend_font_size = 0)
-
+    
   } else {right_data = NULL}
-
-
-
+  
+  
+  
   # Main plot y_label
   main_plot = plot_volcano(data = data,
                            label = plot_label,
@@ -6620,33 +6666,33 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
                            x_label_font_size = x_label_font_size,
                            x_tick_font_size = x_tick_font_size,
                            legend_font_size = legend_font_size)
-
+  
   # Blank plot
   blank_plot = create_blank_plot()
-
-
-
-
+  
+  
+  
+  
   if (is.null(left_data) & is.null(right_data) & is.null(top_data) | (displayed_plot == 'main')) { # Only main
     out_plot = main_plot
     out_plot = plotly::layout(out_plot,
                               yaxis = list(title = list(text = ifelse(y_label_font_size == 0, "", y_label),
                                                         font = list(size = y_label_font_size))))
-
+    
   } else if (!is.null(top_data) & (displayed_plot == 'top')) { # Export top violin
-
+    
     out_plot = top_violin
-
+    
   } else if (!is.null(left_data) & (displayed_plot == 'left')) { # Export left violin
-
+    
     out_plot = left_violin
-
+    
   } else if (!is.null(right_data) & (displayed_plot == 'right')) { # Export right violin
-
+    
     out_plot = right_violin
-
+    
   } else if (is.null(left_data) & is.null(right_data) & !is.null(top_data) & (displayed_plot == 'all')) { # Top only
-
+    
     out_plot = plotly::subplot(
       top_violin,
       main_plot,
@@ -6654,9 +6700,9 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
       shareX = TRUE,
       heights = c(0.1, 0.9)
     )
-
+    
   } else if (!is.null(left_data) & is.null(right_data) & is.null(top_data) & (displayed_plot == 'all')) { # Left only
-
+    
     out_plot = plotly::subplot(
       list(left_violin, main_plot),
       shareX = TRUE,
@@ -6665,9 +6711,9 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
       titleY = F,
       widths = c(0.1, 0.9)
     )
-
+    
   } else if (is.null(left_data) & !is.null(right_data) & is.null(top_data) & (displayed_plot == 'all')) { # Right only
-
+    
     out_plot = plotly::subplot(
       list(main_plot, right_violin),
       shareX = TRUE,
@@ -6676,9 +6722,9 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
       titleY = F,
       widths = c(0.9, 0.1)
     )
-
+    
   } else if (!is.null(left_data) & !is.null(right_data) & is.null(top_data) & (displayed_plot == 'all')) { # Left and Right
-
+    
     out_plot = plotly::subplot(
       matrix(list(left_violin, main_plot, right_violin),
              ncol = 3, byrow = TRUE),
@@ -6688,7 +6734,7 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
       titleY = F,
       widths = c(0.1, 0.8, 0.1)
     )
-
+    
     out_plot = plotly::layout(out_plot,
                               yaxis = list(title = y_label),
                               yaxis = list(title = list(text = y_label,
@@ -6696,7 +6742,7 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
                                            showticklabels = ifelse(y_tick_font_size == 0, F, T),
                                            tickfont = list(size = y_tick_font_size)))
   } else if (!is.null(left_data) & !is.null(right_data) & !is.null(top_data) & (displayed_plot == 'all')) { # All violins
-
+    
     out_plot = plotly::subplot(
       list(blank_plot, top_violin, blank_plot,
            left_violin, main_plot, right_violin),
@@ -6710,7 +6756,7 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
       heights = c(0.1, 0.9)
     )
   } else if (!is.null(left_data) & is.null(right_data) & !is.null(top_data) & (displayed_plot == 'all')) { # Top and left
-
+    
     out_plot = plotly::subplot(
       list(blank_plot, top_violin,
            left_violin, main_plot),
@@ -6723,9 +6769,9 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
       widths = c(0.1, 0.9),
       heights = c(0.1, 0.9)
     )
-
+    
   } else if (is.null(left_data) & !is.null(right_data) & !is.null(top_data) & (displayed_plot == 'all')) { # Top and right
-
+    
     out_plot = plotly::subplot(
       list(top_violin, blank_plot,
            main_plot, right_violin),
@@ -6742,15 +6788,15 @@ volcano_main = function(fc_vals = volcano_table$fold_change,
     warning('Selected plot unavailable, returning blank.')
     out_plot = blank_plot
   }
-
+  
   out_plot = plotly::layout(
     p = out_plot,
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)'
   )
-
+  
   return(out_plot)
-
+  
 }
 
 plot_volcano_violin = function(
@@ -6762,15 +6808,15 @@ plot_volcano_violin = function(
     x_label_font_size = 20,
     y_label_font_size = 20,
     legend_font_size = 0) {
-
+  
   if (!(side %in% c('left', 'right', 'top'))) {
     stop('side must be in [left, right, top]')
   }
-
+  
   show_legend = base::ifelse(legend_font_size == 0, F, T)
   label = paste0(side, ' only')
   label = base::ifelse(x_label_font_size == 0, "", label)
-
+  
   if (side == 'left') {
     col_line = 'blue'
     col_fill = 'lightblue'
@@ -6786,9 +6832,9 @@ plot_volcano_violin = function(
                                    y_label_font_size = y_label_font_size,
                                    legend_font_size = legend_font_size))
   }
-
+  
   p = plotly::plot_ly()
-
+  
   if (length(data$log10_p_values[which(data$log10_p_values >= threshold)]) > 1) {
     sub_data = data[which(data$log10_p_values >= threshold),]
     p = plotly::add_trace(p,
@@ -6805,7 +6851,7 @@ plot_volcano_violin = function(
                           hoverinfo = 'none',
                           showlegend = F)
   }
-
+  
   if (length(data$log10_p_values[which(data$log10_p_values < threshold)]) > 1) {
     sub_data = data[which(data$log10_p_values < threshold),]
     p = plotly::add_trace(p,
@@ -6822,7 +6868,7 @@ plot_volcano_violin = function(
                           hoverinfo = 'none',
                           showlegend = F)
   }
-
+  
   for (group in unique(data$groups)) {
     group_table = data[data$groups == group,]
     p = plotly::add_trace(p,
@@ -6841,9 +6887,9 @@ plot_volcano_violin = function(
                           showlegend = F) #
   }
   p = plotly::layout(p,
-
+                     
                      xaxis = list(title = list(font = list(size = x_label_font_size))
-                                  ),
+                     ),
                      shapes = list(
                        list(
                          type = "line",
@@ -6855,9 +6901,9 @@ plot_volcano_violin = function(
                        )
                      )
   )
-
+  
   return(p)
-
+  
 }
 
 plot_volcano_violin_top = function(data,
@@ -6867,13 +6913,13 @@ plot_volcano_violin_top = function(data,
                                    x_label_font_size,
                                    y_label_font_size,
                                    legend_font_size) {
-
+  
   xlabel = base::ifelse(x_label_font_size == 0, '', 'Log2(Fold Change)')
   ylabel = base::ifelse(y_label_font_size == 0, '', 'No p-value')
   show_legend = base::ifelse(legend_font_size == 0, F, T)
-
+  
   p = plotly::plot_ly()
-
+  
   p = plotly::add_trace(p,
                         y = ylabel,
                         x = data$log2_fold_change,
@@ -6889,10 +6935,10 @@ plot_volcano_violin_top = function(data,
                         hoverinfo = 'none',
                         showlegend = F, #
                         orientation = 'h')
-
+  
   for (group in unique(data$groups)) {
     group_table = data[data$groups == group,]
-
+    
     p = plotly::add_trace(p,
                           type = "scatter",
                           mode = "markers",
@@ -6904,9 +6950,9 @@ plot_volcano_violin_top = function(data,
                           text = group_table$names,
                           hoverinfo = 'text',
                           showlegend = F) 
-
+    
   }
-
+  
   p = plotly::layout(p,
                      xaxis = list(title = list(text = xlabel,
                                                font = x_label_font_size)
@@ -6938,16 +6984,16 @@ plot_volcano_violin_top = function(data,
 }
 
 plot_volcano = function(data, label = NULL, marker_size, p_val_threshold = 0.05, fc_threshold = 2, opacity = 1, y_axis_title = '-Log10(p-value)', title_font_size = 16, y_label_font_size = 20, y_tick_font_size = 15, x_label_font_size = 20, x_tick_font_size = 15, legend_font_size = 15) {
-
+  
   label = base::ifelse(title_font_size == 0, "", label)
   y_axis_title = base::ifelse(y_label_font_size == 0, "", y_axis_title)
   x_axis_title = base::ifelse(x_label_font_size == 0, "", "Log2(Fold Change)")
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   legend_show = base::ifelse(legend_font_size > 0, T, F)
-
+  
   main_plot = plotly::plot_ly()
-
+  
   for (group in unique(data$groups)) {
     subset_data = data[data$groups == group, ]
     main_plot = plotly::add_trace(
@@ -6967,7 +7013,7 @@ plot_volcano = function(data, label = NULL, marker_size, p_val_threshold = 0.05,
       hoverinfo = 'text'
     )
   }
-
+  
   main_plot = plotly::layout(main_plot,
                              title = list(text = label,
                                           xref = "paper",
@@ -7015,7 +7061,7 @@ plot_volcano = function(data, label = NULL, marker_size, p_val_threshold = 0.05,
                                  y1 = -log10(p_val_threshold),
                                  line = list(color = "black", width = 1, dash = "dot")
                                )
-
+                               
                              ),
                              legend = list(font = list(size = legend_font_size))
   )
@@ -7024,34 +7070,34 @@ plot_volcano = function(data, label = NULL, marker_size, p_val_threshold = 0.05,
 
 #----------------------------------------------------------------- PCA plot ----
 pca_main = function(data_table, sample_groups = NULL, feature_groups = NULL, nPcs = 2, displayed_pc_1 = 1, displayed_pc_2 = 2, pca_method = 'svd', completeObs = T, displayed_plots = "both", colors_palette = "Spectral", marker_size = 5, opacity = 1, title_font_size = 10, y_label_font_size = 5, y_tick_font_size = 2, x_label_font_size = 5, x_tick_font_size = 2, legend_font_size = 2, return_data = FALSE, width = NULL, height = NULL) {
-
+  
   # Check if arguments are valid
   if (!(pca_method %in% pcaMethods::listPcaMethods())){
     print(paste0('Invalid pca_method: must be one of [', paste(pcaMethods::listPcaMethods(), collapse = ', '), '], defaulting to svd'))
     pca_method = 'svd'
   }
-
+  
   if ((pca_method %in% c('robustPca', 'nlpca', 'llsImpute'))){
     print(paste0(pca_method, ' is not currently supported, defaulting to svd'))
     pca_method = 'svd'
   }
-
+  
   if (!(displayed_plots %in% c('both', 'loadings', 'scores', 'variance'))){
     print('Error: displayed_plots must be in both, loadings or scores')
     return()
   }
-
+  
   if (max(c(displayed_pc_1, displayed_pc_2)) > nPcs) {
     print('At least one displayed PC outside of nPcs range, adjusting nPcs')
     nPcs = max(c(displayed_pc_1, displayed_pc_2))
   }
-
+  
   if (displayed_pc_1 == displayed_pc_2) {
     print('displayed PCs are the same, defaulting to PC1 and PC2')
     displayed_pc_1 = 1
     displayed_pc_2 = 2
   }
-
+  
   # Apply PCA
   pca_data = pcaMethods::pca(object = data_table,
                              method = pca_method,
@@ -7059,7 +7105,7 @@ pca_main = function(data_table, sample_groups = NULL, feature_groups = NULL, nPc
                              scale = "none",
                              cv = "q2",
                              completeObs = completeObs)
-
+  
   # Plot depending on the type requested
   if (displayed_plots == 'both') {
     fig = c()
@@ -7083,8 +7129,8 @@ pca_main = function(data_table, sample_groups = NULL, feature_groups = NULL, nPc
                         legend_font_size = legend_font_size,
                         width = width,
                         height = height)
-
-
+    
+    
     fig[[2]] = plot_pca(x = pca_data@loadings[, paste0('PC', displayed_pc_1)],
                         y = pca_data@loadings[, paste0('PC', displayed_pc_2)],
                         label_1 = paste0('PC', displayed_pc_1),
@@ -7105,16 +7151,16 @@ pca_main = function(data_table, sample_groups = NULL, feature_groups = NULL, nPc
                         legend_font_size = legend_font_size,
                         width = width,
                         height = height)
-
+    
     fig = plotly::subplot(fig, nrows = 1, margin = 0.035, titleX = T, titleY = T)
-
+    
     fig = plotly::layout(fig,
                          title = list(text = "PCA scores and loadings",
                                       font = list(size = title_font_size)))
-
-
+    
+    
   } else if (displayed_plots == 'loadings'){
-
+    
     fig = plot_pca(x = pca_data@loadings[, paste0('PC', displayed_pc_1)],
                    y = pca_data@loadings[, paste0('PC', displayed_pc_2)],
                    label_1 = paste0('PC', displayed_pc_1),
@@ -7135,9 +7181,9 @@ pca_main = function(data_table, sample_groups = NULL, feature_groups = NULL, nPc
                    legend_font_size = legend_font_size,
                    width = width,
                    height = height)
-
+    
   } else if (displayed_plots == 'scores') {
-
+    
     fig = plot_pca(x = pca_data@scores[,paste0('PC', displayed_pc_1)],
                    y = pca_data@scores[,paste0('PC', displayed_pc_2)],
                    label_1 = paste0('PC', displayed_pc_1),
@@ -7159,7 +7205,7 @@ pca_main = function(data_table, sample_groups = NULL, feature_groups = NULL, nPc
                    width = width,
                    height = height)
   } else if (displayed_plots == 'variance') {
-
+    
     fig = plot_explained_variance(variance_explained = pca_data@R2,
                                   title_font_size = title_font_size,
                                   y_label_font_size = y_label_font_size,
@@ -7170,7 +7216,7 @@ pca_main = function(data_table, sample_groups = NULL, feature_groups = NULL, nPc
                                   width = width,
                                   height = height)
   }
-
+  
   if (return_data) {
     return(list(
       pca_data = pca_data,
@@ -7178,35 +7224,35 @@ pca_main = function(data_table, sample_groups = NULL, feature_groups = NULL, nPc
   } else {
     return(fig)
   }
-
-
+  
+  
 }
 
 
 plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, groups = NULL, colors = "Spectral", marker_size = 5, opacity = 1, title_font_size = 10, y_label_font_size = 5, y_tick_font_size = 2, x_label_font_size = 5, x_tick_font_size = 2, legend_font_size = 2, width = NULL, height = NULL) {
-
+  
   if (!(type %in% c("scores", "loadings"))) {
     print('Error: type must either be scores or loadings.')
     return()
   }
-
+  
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
   legend_show = base::ifelse(legend_font_size > 0, T, F)
-
+  
   if (is.null(groups) & (type == "scores")) { # Score plot without groups (should not exist)
     data_table = data.frame(
       x = x,
       y = y,
       names = names
     )
-
+    
     conf_ellipse = ellipse::ellipse(x = stats::cov(cbind(data_table$x, data_table$y)),
                                     centre = c(mean(data_table$x), mean(data_table$y)),
                                     level = 0.95)
-
+    
     plot = plotly::plot_ly(data = data_table, width = width, height = height)
-
+    
     plot = plotly::add_markers(plot,
                                x = ~x,
                                y = ~y,
@@ -7215,8 +7261,8 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                                marker = list(size = marker_size,
                                              opacity = opacity,
                                              line = list(width = 0.5, color = 'white')))
-
-
+    
+    
     plot = plotly::add_trace(plot,
                              data = as.data.frame(conf_ellipse),
                              x = ~x,
@@ -7228,7 +7274,7 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                              name = 'Hotelling',
                              showlegend = TRUE,
                              type = "scatter")
-
+    
     plot = plotly::layout(plot,
                           title = list(text = base::ifelse(title_font_size == 0, "", "PCA Scores Plot"),
                                        font = list(size = title_font_size)),
@@ -7254,21 +7300,21 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                           plot_bgcolor='rgba(0,0,0,0)',
                           paper_bgcolor='rgba(0,0,0,0)'
     )
-
-
-
+    
+    
+    
     return(plot)
-
+    
   } else if (is.null(groups) & (type == "loadings")) { # Loadings plot without groups
-
+    
     data_table = data.frame(
       x = x,
       y = y,
       names = names
     )
-
+    
     plot = plotly::plot_ly(data = data_table, width = width, height = height)
-
+    
     plot = plotly::add_segments(plot,
                                 x = 0,
                                 y = 0,
@@ -7276,7 +7322,7 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                                 yend = ~y,
                                 line = list(dash = "solid"),
                                 showlegend = FALSE)
-
+    
     plot = plotly::add_markers(plot,
                                x = ~x,
                                y = ~y,
@@ -7286,7 +7332,7 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                                              opacity = opacity,
                                              line = list(width = 0.5, color = 'white')),
                                showlegend = FALSE)
-
+    
     plot = plotly::layout(plot,
                           title = list(text = base::ifelse(title_font_size == 0, "", "PCA Loadings Plot"),
                                        font = list(size = title_font_size)),
@@ -7312,24 +7358,24 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                           plot_bgcolor='rgba(0,0,0,0)',
                           paper_bgcolor='rgba(0,0,0,0)'
     )
-
+    
     return(plot)
-
+    
   } else if (!is.null(groups) & (type == "scores")) { # Score plot with groups
-
+    
     data_table = data.frame(
       x = x,
       y = y,
       names = names,
       groups = as.factor(groups)
     )
-
+    
     conf_ellipse = ellipse::ellipse(x = stats::cov(cbind(data_table$x, data_table$y)),
                                     centre = c(mean(data_table$x), mean(data_table$y)),
                                     level = 0.95)
-
+    
     plot = plotly::plot_ly(data = data_table, width = width, height = height)
-
+    
     plot = plotly::add_markers(plot,
                                x = ~x,
                                y = ~y,
@@ -7342,7 +7388,7 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                                colors = colors,
                                legendgroup = ~groups,
                                showlegend = legend_show)
-
+    
     plot = plotly::add_trace(plot,
                              data = as.data.frame(conf_ellipse),
                              x = ~x,
@@ -7354,8 +7400,8 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                              name = 'Hotelling',
                              showlegend = legend_show,
                              type = "scatter")
-
-
+    
+    
     plot = plotly::layout(plot,
                           title = list(text = base::ifelse(title_font_size == 0, "", "PCA Scores Plot"),
                                        font = list(size = title_font_size)),
@@ -7381,23 +7427,23 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                           plot_bgcolor='rgba(0,0,0,0)',
                           paper_bgcolor='rgba(0,0,0,0)'
     )
-
-
-
-
+    
+    
+    
+    
     return(plot)
-
+    
   } else if (!is.null(groups) & (type == "loadings")) {
-
+    
     data_table = data.frame(
       x = x,
       y = y,
       names = names,
       groups = as.factor(groups)
     )
-
+    
     plot = plotly::plot_ly(data = data_table, width = width, height = height)
-
+    
     plot = plotly::add_segments(plot,
                                 x = 0,
                                 y = 0,
@@ -7408,7 +7454,7 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                                 colors = colors,
                                 legendgroup = ~groups,
                                 showlegend = FALSE)
-
+    
     plot = plotly::add_markers(plot,
                                x = ~x,
                                y = ~y,
@@ -7421,7 +7467,7 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                                colors = colors,
                                legendgroup = ~groups,
                                showlegend = legend_show)
-
+    
     plot = plotly::layout(plot,
                           title = list(text = base::ifelse(title_font_size == 0, "", "PCA Loadings Plot"),
                                        font = list(size = title_font_size)),
@@ -7447,23 +7493,23 @@ plot_pca = function(x, y, label_1, label_2, weight_1, weight_2, names, type, gro
                           plot_bgcolor='rgba(0,0,0,0)',
                           paper_bgcolor='rgba(0,0,0,0)'
     )
-
+    
     return(plot)
-
+    
   }
 }
 
 plot_explained_variance = function(variance_explained, title_font_size = 10, y_label_font_size = 5, y_tick_font_size = 2, x_label_font_size = 5, x_tick_font_size = 2, legend_font_size = 2, width, height) {
-
+  
   xtick_show = base::ifelse(x_tick_font_size > 0, T, F)
   ytick_show = base::ifelse(y_tick_font_size > 0, T, F)
-
+  
   if (variance_explained[1] < 1) {
     variance_explained = variance_explained * 100
   }
-
+  
   cumulative_variance = base::cumsum(variance_explained)
-
+  
   plot = plotly::plot_ly(x = 1:length(variance_explained),
                          y = variance_explained,
                          type = 'bar',
@@ -7471,7 +7517,7 @@ plot_explained_variance = function(variance_explained, title_font_size = 10, y_l
                          marker = list(color = 'lightblue'),
                          width = width,
                          height = height)
-
+  
   # Add line for cumulative variance
   plot = plotly::add_trace(plot,
                            x = 1:length(variance_explained),
@@ -7481,7 +7527,7 @@ plot_explained_variance = function(variance_explained, title_font_size = 10, y_l
                            name = 'Cumulative Variance',
                            line = list(color = 'red'),
                            marker = list(color = 'red'))
-
+  
   # Customize the layout
   plot = plotly::layout(plot,
                         title = list(text = base::ifelse(title_font_size == 0, "", "Variance Explained by Each PC"),
@@ -7505,7 +7551,7 @@ plot_explained_variance = function(variance_explained, title_font_size = 10, y_l
                         ),
                         barmode = 'overlay'
   )
-
+  
   return(plot)
 }
 
@@ -7518,7 +7564,7 @@ fa_analysis_calc = function(data_table = NULL,
   ## Features
   feature_table = feature_table[colnames(data_table),]
   feature_table$lipid = rownames(feature_table)
-
+  
   # fix TG's
   idx_tg = feature_table$lipid[feature_table[["Lipid class"]] == "TG"]
   idx_tg = base::intersect(idx_tg, colnames(data_table))
@@ -7528,7 +7574,7 @@ fa_analysis_calc = function(data_table = NULL,
   }
   
   data_table[, idx_tg] = data_table[, idx_tg] / 3
-
+  
   # get the species from the selected lipid classes
   if(selected_lipidclass == "All") {
     # all lipids, but remove PA
@@ -7540,18 +7586,18 @@ fa_analysis_calc = function(data_table = NULL,
     sel_feat_idx = feature_table$lipid[feature_table[["Lipid class"]] %in% selected_lipidclass]
   }
   sel_feature_table = feature_table[feature_table$lipid %in% sel_feat_idx, ]
-
+  
   ## Data
   # select the correct data
   sel_data_table = data_table[, sel_feat_idx, drop = F]
-
+  
   # get the unique chain lengths and unsaturation
   uniq_carbon = sort(union(unique(sel_feature_table[["Carbon count (chain 1)"]][sel_feature_table[["Lipid class"]] != "TG"]),
                            unique(sel_feature_table[["Carbon count (chain 2)"]])))
   uniq_carbon = uniq_carbon[uniq_carbon != 0]
   uniq_unsat = sort(union(unique(sel_feature_table[["Double bonds (chain 1)"]][sel_feature_table[["Lipid class"]] != "TG"]),
                           unique(sel_feature_table[["Double bonds (chain 2)"]])))
-
+  
   # Initialize results data.frame
   fa_chains = expand.grid(uniq_unsat, uniq_carbon)
   fa_chains = paste(fa_chains[, 2], fa_chains[, 1], sep = ":")
@@ -7559,7 +7605,7 @@ fa_analysis_calc = function(data_table = NULL,
                              nrow = nrow(sel_data_table)))
   colnames(res) = fa_chains
   rownames(res) = rownames(sel_data_table)
-
+  
   # do the calculations
   for(a in uniq_carbon) {
     for(b in uniq_unsat) {
@@ -7572,25 +7618,25 @@ fa_analysis_calc = function(data_table = NULL,
                                                      sel_feature_table[["Double bonds (chain 1)"]] == b) &
                                                     (sel_feature_table[["Carbon count (chain 2)"]] == a &
                                                        sel_feature_table[["Double bonds (chain 2)"]] == b)]
-
+      
       res[, sel_fa_chain] = `+`(
         rowSums(sel_data_table[, sel_lipids, drop = FALSE], na.rm = TRUE),
         rowSums(sel_data_table[, sel_lipids_double, drop = FALSE], na.rm = TRUE)
       )
     }
   }
-
+  
   # remove empty columns
   empty_idx = apply(res, 2, function(x) {
     all(x == 0)
   })
   res = res[, !empty_idx]
-
+  
   # normalise by total FA's
   if(fa_norm) {
     res = res / rowSums(res, na.rm = TRUE)
   }
-
+  
   return(res)
 }
 
@@ -7601,23 +7647,23 @@ fa_analysis_rev_calc = function(data_table = NULL,
                                 selected_fa = NULL,
                                 fa_norm = FALSE) {
   uniq_lipid_classes = unique(feature_table[["Lipid class"]][!(feature_table[["Lipid class"]] %in% c("PA"))])
-
+  
   ## Features
   feature_table$lipid = rownames(feature_table)
-
+  
   sel_feat_idx = feature_table$lipid[!(feature_table[["Lipid class"]] %in% c("PA"))]
   sel_feature_table = feature_table[feature_table$lipid %in% sel_feat_idx, ]
-
+  
   ## Data
   # select the correct data
   sel_data_table = data_table[, sel_feat_idx]
-
+  
   # Initialize results data.frame
   res = as.data.frame(matrix(ncol = length(uniq_lipid_classes),
                              nrow = nrow(sel_data_table)))
   colnames(res) = uniq_lipid_classes
   rownames(res) = rownames(sel_data_table)
-
+  
   # do the calculations
   fa_norm_tot = 0
   for(lipid_class in uniq_lipid_classes) {
@@ -7635,28 +7681,28 @@ fa_analysis_rev_calc = function(data_table = NULL,
                                                        sel_feature_table[["Double bonds (chain 1)"]] == split_fa[2]) &
                                                     (sel_feature_table[["Carbon count (chain 2)"]] == split_fa[1] &
                                                        sel_feature_table[["Double bonds (chain 2)"]] == split_fa[2])]
-
+      
       res[, lipid_class] = rowSums(sel_data_table[, c(sel_lipids, sel_lipids_double), drop = FALSE], na.rm = TRUE)
     } # end selected_fa
   } # end lipid_class
-
+  
   # fix the TG's
   res[, "TG"] = res[, "TG"] / 3
-
+  
   # remove empty columns
   empty_idx = apply(res, 2, function(x) {
     all(x == 0)
   })
   res = res[, !empty_idx]
-
+  
   # get rid of the zero's
   res[res == 0] = NA
-
+  
   # normalise by total FA's
   if(fa_norm) {
     res = res / rowSums(res, na.rm = TRUE)
   }
-
+  
   return(res)
 }
 
@@ -7751,36 +7797,36 @@ get_colors = function(color_count, color_palette) {
 create_color_scale = function(color_palette) {
   # Calculate evenly spaced positions for each color
   positions = base::seq(0, 1, length.out = length(color_palette))
-
+  
   # Combine the positions and colors into the correct format for Plotly
   custom_colorscale = stats::setNames(as.list(color_palette), as.character(positions))
-
+  
   # Convert the list to the format Plotly expects (list of lists with position and color)
   plotly_colorscale = lapply(names(custom_colorscale), function(x) c(as.numeric(x), custom_colorscale[[x]]))
   return(plotly_colorscale)
 }
 
 get_color_palette = function(groups, color_palette, reverse_color_palette = F, force_scale = F, force_list = F) {
-
+  
   # Checks
   if (force_scale & force_list) {
     stop("force_scale and force_list cannot both be TRUE")
   }
-
+  
   # Get unique groups
   unique_groups = sort(unique(groups))
-
+  
   # Get the color palette values
   color_count = colors_switch(color_palette)
   color_palette = get_colors(color_count = color_count, color_palette = color_palette)
   if (reverse_color_palette) {
     color_palette = base::rev(color_palette)
   }
-
+  
   # Is data numeric or string
   if (is_coercible_to_numeric(groups)) {
     groups = base::as.numeric(groups)
-
+    
     # Is data continuous or discrete
     if (((length(unique_groups) > 25) | force_scale) & !force_list) {
       # If continuous, export a color scale (for plotly)

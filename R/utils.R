@@ -1227,35 +1227,127 @@ get_lipid_class.lipidzyer <- function(feature_list = NULL,
 
 get_lipid_class.general <- function(feature_list = NULL,
                                     uniques = TRUE) {
-  feature_list <- sapply(strsplit(x = feature_list,
-                                  split = "\\|"), "[[", 2)
+  # feature_list <- sapply(strsplit(x = feature_list,
+  #                                 split = "\\|"), "[[", 2)
+  # 
+  # classes = sapply(feature_list, function(x)
+  #   strsplit(x = x,
+  #            split = " ",
+  #            fixed = TRUE)[[1]][1])
+  # classes = as.vector(classes)
+  # # extract ether Phospolipids
+  # classes <- ifelse(grepl(x = classes,
+  #                         pattern = "^L?P[CEGIS]$"),
+  #                   gsub(x = feature_list,
+  #                        pattern = "^(L?P[CEGIS]) ([OP])?(-)?.*",
+  #                        replacement = "\\1\\3\\2"),
+  #                   classes)
+  # # extract oxidized lipids
+  # classes <- ifelse(grepl(x = feature_list,
+  #                         pattern = "^(FA|P[CEGIS]|TG).*(;[0-9]?O|\\(2OH\\))$"),
+  #                   gsub(x = feature_list,
+  #                        pattern = "^(FA|P[CEGIS]|TG).*(;[0-9]?O|\\(2OH\\))$",
+  #                        replacement = "Ox\\1"),
+  #                   classes)
   
-  classes = sapply(feature_list, function(x)
-    strsplit(x = x,
-             split = " ",
-             fixed = TRUE)[[1]][1])
-  classes = as.vector(classes)
-  # extract ether Phospolipids
-  classes <- ifelse(grepl(x = classes,
-                          pattern = "^L?P[CEGIS]$"),
-                    gsub(x = feature_list,
-                         pattern = "^(L?P[CEGIS]) ([OP])?(-)?.*",
-                         replacement = "\\1\\3\\2"),
-                    classes)
-  # extract oxidized lipids
-  classes <- ifelse(grepl(x = feature_list,
-                          pattern = "^(FA|P[CEGIS]|TG).*(;[0-9]?O|\\(2OH\\))$"),
-                    gsub(x = feature_list,
-                         pattern = "^(FA|P[CEGIS]|TG).*(;[0-9]?O|\\(2OH\\))$",
-                         replacement = "Ox\\1"),
-                    classes)
+  # colnames contain the short and long lipid name separated by '|'
+  lipids <- strsplit(x = colnames(lipid_data)[-1],
+                     split = "\\|")
   
-  print(classes)
+  lipids <- do.call("rbind", lipids)
+  colnames(lipids) <- c("shortLipidName", "longLipidName")
+  
+  # rough extraction of lipid class
+  lipidClass <- gsub(x = lipids[, "longLipidName"],
+                     pattern = "^([0-9a-zA-Z\\-]*( O-)?).*$",
+                     replacement = "\\1",
+                     perl = TRUE)
+  lipids <- cbind(
+    lipids,
+    lipidClass
+  )
+  
+  # fine tune lipid class extraction
+  # Phospholipids
+  lipids[, "lipidClass"] <- gsub(x = lipids[, "lipidClass"],
+                                 pattern = "(L?P[CEGI]) O-",
+                                 replacement = "Ether\\1",
+                                 perl = TRUE)
+  lipids[lipids[, "lipidClass"] == "PE P-", "lipidClass"] <- "EtherPE(P)"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^PC [0-9]+:[0-9]+;O[0-9]?$"), "lipidClass"] <- "OxPC"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^PE [0-9]+:[0-9]+;O[0-9]?$"), "lipidClass"] <- "OxPE"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^PE O-[0-9]+:[0-9]+;O[0-9]?$"), "lipidClass"] <- "EtherOxPE"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^PG [0-9]+:[0-9]+;O[0-9]?$"), "lipidClass"] <- "OxPG"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^PI [0-9]+:[0-9]+;O[0-9]?$"), "lipidClass"] <- "OxPI"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^PS [0-9]+:[0-9]+;O[0-9]?$"), "lipidClass"] <- "OxPS"
+  
+  # ceramides
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^Cer [0-9]+:[01];O3\\/[0-9]+:[0-9]+\\(2OH\\)$"), "lipidClass"] <- "Cer-AP"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^Cer [0-9]+:0;O2\\/[0-9]+:[0-9]+\\(2OH\\)$"), "lipidClass"] <- "Cer-ADS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^Cer [0-9]+:1;O2\\/[0-9]+:[0-9]+\\(2OH\\)$"), "lipidClass"] <- "Cer-AS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^Cer [0-9]+:0;O2\\/[0-9]+:[0-9]+;O$"), "lipidClass"] <- "Cer-HDS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^Cer [0-9]+:[12];O2\\/[0-9]+:[0-9]+;O$"), "lipidClass"] <- "Cer-HS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^Cer [0-9]+:0;O2\\/[0-9]+:[0-9]+$"), "lipidClass"] <- "Cer-NDS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^Cer [0-9]+:[12];O2\\/[0-9]+:[0-9]+$"), "lipidClass"] <- "Cer-NS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^Cer [0-9]+:[0-9]+;O3\\/[0-9]+:[0-9]+$"), "lipidClass"] <- "Cer-NP"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^HexCer [0-9]+:[01];O3\\/[0-9]+:[0-9]+\\(2OH\\)$"), "lipidClass"] <- "HexCer-AP"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^HexCer [0-9]+:0;O2\\/[0-9]+:[0-9]+\\(2OH\\)$"), "lipidClass"] <- "HexCer-ADS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^HexCer [0-9]+:1;O2\\/[0-9]+:[0-9]+\\(2OH\\)$"), "lipidClass"] <- "HexCer-AS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^HexCer [0-9]+:0;O2\\/[0-9]+:[0-9]+;O$"), "lipidClass"] <- "HexCer-HDS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^HexCer [0-9]+:[12];O2\\/[0-9]+:[0-9]+;O$"), "lipidClass"] <- "HexCer-HS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^HexCer [0-9]+:0;O2\\/[0-9]+:[0-9]+$"), "lipidClass"] <- "HexCer-NDS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^HexCer [0-9]+:[12];O2\\/[0-9]+:[0-9]+$"), "lipidClass"] <- "HexCer-NS"
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^HexCer [0-9]+:[0-9]+;O3\\/[0-9]+:[0-9]+$"), "lipidClass"] <- "HexCer-NP"
+  
+  # Oxidized FA
+  lipids[grepl(x = lipids[, "longLipidName"],
+               pattern = "^FA [0-9]+:[0-9]+(;O2|\\(2OH\\))$"), "lipidClass"] <- "OxFA"
+  
+  # Glycerolipids
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^TG [0-9]+:[0-9]+;O$"), "lipidClass"] <- "OxTG"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^TG [0-9]+:[0-9]+;O2$"), "lipidClass"] <- "TG-EST"
+  lipids[lipids[, "lipidClass"] == "TG O-", "lipidClass"] <- "EtherTG"
+  lipids[lipids[, "lipidClass"] == "DG O-", "lipidClass"] <- "EtherDG"
+  lipids[lipids[, "lipidClass"] == "DGDG O-", "lipidClass"] <- "EtherDGDG"
+  lipids[lipids[, "lipidClass"] == "MGDG O-", "lipidClass"] <- "EtherMGDG"
+  lipids[lipids[, "lipidClass"] == "SMGDG O-", "lipidClass"] <- "EtherSMGDG"
+  
+  # sphingolipids
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^SPB [0-9]+:[0-9]+;O3$"), "lipidClass"] <- "PhytoSph"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^SPB [0-9]+:1;O2$"), "lipidClass"] <- "Sph"
+  lipids[grepl(x = lipids[, "shortLipidName"],
+               pattern = "^SPB [0-9]+:0;O2$"), "lipidClass"] <- "DHSph"
   
   if (uniques) {
-    return(unique(classes))}
+    return(unique(lipids[, "lipidClass"]))}
   else{
-    return(classes)
+    return(lipids[, "lipidClass"])
   }
 }
 
@@ -1334,6 +1426,8 @@ get_feature_metadata.lipidyzer = function(feature_table) {
 
 get_feature_metadata.general = function(feature_table) {
   
+  print("Rico: feature list")
+  print(rownames(feature_table))
   feature_table[, 'Lipid class'] = get_lipid_classes(feature_list = rownames(feature_table),
                                                      uniques = FALSE)
   
@@ -1344,8 +1438,6 @@ get_feature_metadata.general = function(feature_table) {
     idx = rownames(feature_table)[feature_table[, 'Lipid class'] == c]
     idx <- sapply(strsplit(x = idx,
                            split = "\\|"), "[[", 2)
-    # print("Rico")
-    # print(c)
     
     if (c == "TG") {
       # For triglycerides
@@ -1356,23 +1448,19 @@ get_feature_metadata.general = function(feature_table) {
       # only 1 FA tail
       # skip for now      
     } else if (sum(stringr::str_detect(string = idx, pattern = "/|_")) > 0) {
-      print("asyl groups")
       # For species with asyl groups ("/" or "_")
       truffles = stringr::str_split(string = idx, pattern = " |:|_|/")
       names(truffles) = idx
       new_feature_table = c(new_feature_table, truffles)
     } else {
       # For the rest
-      print("rest")
       truffles = paste0(idx, ':0:0:0:0')
       truffles = stringr::str_split(string = truffles, pattern = " |:")
-      # print(truffles)
       names(truffles) = idx
       new_feature_table = c(new_feature_table, truffles)
       
     }
   }
-  
   new_feature_table = as.data.frame(t(data.frame(new_feature_table, check.names = F)), check.names = F)
   new_feature_table[,2] = gsub("[^0-9]", "", new_feature_table[,2])
   for (col in colnames(new_feature_table)[2:ncol(new_feature_table)]) {
@@ -1386,7 +1474,6 @@ get_feature_metadata.general = function(feature_table) {
     new_feature_table[idx_tgs,6] = new_feature_table[idx_tgs,2]
     new_feature_table[idx_tgs,7] = new_feature_table[idx_tgs,3]
   }
-  
   colnames(new_feature_table) = c(
     'Lipid class',
     'Carbon count (chain 1)',

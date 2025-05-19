@@ -1126,10 +1126,14 @@ get_lipid_class_table = function(table,
                                  is_lipidyzer_data = FALSE){
   
   # Get unique lipid classes
-  classes = get_lipid_classes(feature_list = colnames(table), uniques = TRUE)
+  classes = get_lipid_classes(feature_list = colnames(table), 
+                              uniques = TRUE,
+                              is_lipidyzer_data = is_lipidyzer_data)
   
   # Get a column vector to find easily which columns belong to each lipid group
-  col_vector = get_lipid_classes(feature_list = colnames(table), uniques = FALSE)
+  col_vector = get_lipid_classes(feature_list = colnames(table), 
+                                 uniques = FALSE,
+                                 is_lipidyzer_data = is_lipidyzer_data)
   
   if(is_lipidyzer_data) {
     table[, col_vector == "TG"] = table[, col_vector == 'TG'] / 3
@@ -1150,10 +1154,15 @@ get_lipid_class_table = function(table,
   return(out_table)
 }
 
-normalise_lipid_class = function(lips_table) {
+normalise_lipid_class = function(lips_table,
+                                 is_lipidyzer_data = FALSE) {
   # Get classes and unique classes for the lipid features
-  classes = get_lipid_classes(feature_list = as.character(colnames(lips_table)), uniques = FALSE)
-  classes_unique = get_lipid_classes(feature_list = as.character(colnames(lips_table)), uniques = TRUE)
+  classes = get_lipid_classes(feature_list = as.character(colnames(lips_table)), 
+                              uniques = FALSE,
+                              is_lipidyzer_data = is_lipidyzer_data)
+  classes_unique = get_lipid_classes(feature_list = as.character(colnames(lips_table)), 
+                                     uniques = TRUE,
+                                     is_lipidyzer_data = is_lipidyzer_data)
   
   # For each unique lipid class...
   for (lip_class in classes_unique){
@@ -1227,29 +1236,6 @@ get_lipid_class.lipidzyer <- function(feature_list = NULL,
 
 get_lipid_class.general <- function(feature_list = NULL,
                                     uniques = TRUE) {
-  # feature_list <- sapply(strsplit(x = feature_list,
-  #                                 split = "\\|"), "[[", 2)
-  # 
-  # classes = sapply(feature_list, function(x)
-  #   strsplit(x = x,
-  #            split = " ",
-  #            fixed = TRUE)[[1]][1])
-  # classes = as.vector(classes)
-  # # extract ether Phospolipids
-  # classes <- ifelse(grepl(x = classes,
-  #                         pattern = "^L?P[CEGIS]$"),
-  #                   gsub(x = feature_list,
-  #                        pattern = "^(L?P[CEGIS]) ([OP])?(-)?.*",
-  #                        replacement = "\\1\\3\\2"),
-  #                   classes)
-  # # extract oxidized lipids
-  # classes <- ifelse(grepl(x = feature_list,
-  #                         pattern = "^(FA|P[CEGIS]|TG).*(;[0-9]?O|\\(2OH\\))$"),
-  #                   gsub(x = feature_list,
-  #                        pattern = "^(FA|P[CEGIS]|TG).*(;[0-9]?O|\\(2OH\\))$",
-  #                        replacement = "Ox\\1"),
-  #                   classes)
-  
   # colnames contain the short and long lipid name separated by '|'
   lipids <- strsplit(x = feature_list,
                      split = "\\|")
@@ -1358,7 +1344,8 @@ get_feature_metadata <- function(feature_table,
   } else {
     results <- get_feature_metadata.general(feature_table = feature_table)
   }
-  
+  print("Rico")
+  print(head(results))
   return(results)
 }
 
@@ -1425,10 +1412,9 @@ get_feature_metadata.lipidyzer = function(feature_table) {
 }
 
 get_feature_metadata.general = function(feature_table) {
-  
-  print("Rico: feature list")
   feature_table[, 'Lipid class'] = get_lipid_classes(feature_list = rownames(feature_table),
-                                                     uniques = FALSE)
+                                                     uniques = FALSE,
+                                                     is_lipidyzer_data = FALSE)
   # Collect carbon and unsaturation counts
   new_feature_table <- cbind(
     feature_table,
@@ -2478,11 +2464,18 @@ circle = function(x, y, alpha = 0.95, len = 200){
 }
 
 lipidomics_summary_plot = function(r6, data_table) {
-  groups = get_lipid_classes(colnames(r6$tables$imp_data)[2:length(colnames(r6$tables$imp_data))], uniques = T)
+  groups = get_lipid_classes(colnames(r6$tables$imp_data)[2:length(colnames(r6$tables$imp_data))], 
+                             uniques = T,
+                             is_lipidyzer_data = r6$params$is_lipidyzer_data)
   
-  plot_table = data.frame(table(base::factor((get_lipid_classes(colnames(data_table), uniques = F)), levels = groups)))
+  plot_table = data.frame(table(base::factor((get_lipid_classes(colnames(data_table), 
+                                                                uniques = F,
+                                                                is_lipidyzer_data = r6$params$is_lipidyzer_data)), 
+                                             levels = groups)))
   names(plot_table) = c("class", "raw")
-  plot_table$imported = table(base::factor((get_lipid_classes(colnames(r6$tables$imp_data)[2:length(colnames(r6$tables$imp_data))], uniques = F)), levels = groups))
+  plot_table$imported = table(base::factor((get_lipid_classes(colnames(r6$tables$imp_data)[2:length(colnames(r6$tables$imp_data))], 
+                                                              uniques = F,
+                                                              is_lipidyzer_data = r6$params$is_lipidyzer_data)), levels = groups))
   plot_table$removed = plot_table$imported - plot_table$raw
   
   absolute_counts = as.data.frame(base::matrix(nrow = 2*nrow(plot_table)))
@@ -7714,11 +7707,38 @@ plot_explained_variance = function(variance_explained, title_font_size = 10, y_l
 }
 
 #------------------------------------------------------ Fatty acid analysis ----
+# fa_analysis_calc <- function(data_table = NULL,
+#                              feature_table = NULL,
+#                              sample_meta = NULL,
+#                              selected_lipidclass = NULL,
+#                              fa_norm = FALSE,
+#                              is_lipidyzer_data = FALSE) {
+#   if(is_lipidyzer_data) {
+#     res <- fa_analysis_calc.lipidyzer(
+#       data_table = data_table,
+#       feature_table = feature_table,
+#       sample_meta = sample_meta,
+#       selected_lipidclass = selected_lipidclass,
+#       fa_norm = fa_norm
+#     )
+#   } else {
+#     res <- fa_analysis_calc.general(
+#       data_table = data_table,
+#       feature_table = feature_table,
+#       sample_meta = sample_meta,
+#       selected_lipidclass = selected_lipidclass,
+#       fa_norm = fa_norm
+#     )
+#   }
+#   
+#   return(res)
+# }
+
 fa_analysis_calc = function(data_table = NULL,
-                            feature_table = NULL,
-                            sample_meta = NULL,
-                            selected_lipidclass = NULL,
-                            fa_norm = FALSE) {
+                                      feature_table = NULL,
+                                      sample_meta = NULL,
+                                      selected_lipidclass = NULL,
+                                      fa_norm = FALSE) {
   ## Features
   feature_table = feature_table[colnames(data_table),]
   feature_table$lipid = rownames(feature_table)
@@ -7797,6 +7817,91 @@ fa_analysis_calc = function(data_table = NULL,
   
   return(res)
 }
+
+
+# fa_analysis_calc.general <- function(data_table = NULL,
+#                                      feature_table = NULL,
+#                                      sample_meta = NULL,
+#                                      selected_lipidclass = NULL,
+#                                      fa_norm = FALSE) {
+#   ## Features
+#   feature_table = feature_table[colnames(data_table),]
+#   feature_table$lipid = rownames(feature_table)
+#   
+#   # fix TG's
+#   idx_tg = feature_table$lipid[feature_table[["Lipid class"]] == "TG"]
+#   idx_tg = base::intersect(idx_tg, colnames(data_table))
+#   
+#   if (length(idx_tg) == 0) {
+#     base::stop("No TGs found in data")
+#   }
+#   
+#   data_table[, idx_tg] = data_table[, idx_tg] / 3
+#   
+#   # get the species from the selected lipid classes
+#   if(selected_lipidclass == "All") {
+#     # all lipids, but remove PA
+#     sel_feat_idx = feature_table$lipid[!(feature_table[["Lipid class"]] %in% c("PA"))]
+#   } else if(selected_lipidclass == "All_noTG") {
+#     # all lipids, but remove PA
+#     sel_feat_idx = feature_table$lipid[!(feature_table[["Lipid class"]] %in% c("PA", "TG"))]
+#   } else {
+#     sel_feat_idx = feature_table$lipid[feature_table[["Lipid class"]] %in% selected_lipidclass]
+#   }
+#   sel_feature_table = feature_table[feature_table$lipid %in% sel_feat_idx, ]
+#   
+#   ## Data
+#   # select the correct data
+#   sel_data_table = data_table[, sel_feat_idx, drop = F]
+#   
+#   # get the unique chain lengths and unsaturation
+#   uniq_carbon = sort(union(unique(sel_feature_table[["Carbon count (chain 1)"]][sel_feature_table[["Lipid class"]] != "TG"]),
+#                            unique(sel_feature_table[["Carbon count (chain 2)"]])))
+#   uniq_carbon = uniq_carbon[uniq_carbon != 0]
+#   uniq_unsat = sort(union(unique(sel_feature_table[["Double bonds (chain 1)"]][sel_feature_table[["Lipid class"]] != "TG"]),
+#                           unique(sel_feature_table[["Double bonds (chain 2)"]])))
+#   
+#   # Initialize results data.frame
+#   fa_chains = expand.grid(uniq_unsat, uniq_carbon)
+#   fa_chains = paste(fa_chains[, 2], fa_chains[, 1], sep = ":")
+#   res = as.data.frame(matrix(ncol = length(fa_chains),
+#                              nrow = nrow(sel_data_table)))
+#   colnames(res) = fa_chains
+#   rownames(res) = rownames(sel_data_table)
+#   
+#   # do the calculations
+#   for(a in uniq_carbon) {
+#     for(b in uniq_unsat) {
+#       sel_fa_chain = paste(a, b, sep = ":")
+#       sel_lipids = sel_feature_table$lipid[(sel_feature_table[["Carbon count (chain 1)"]] == a &
+#                                               sel_feature_table[["Double bonds (chain 1)"]] == b) |
+#                                              (sel_feature_table[["Carbon count (chain 2)"]] == a &
+#                                                 sel_feature_table[["Double bonds (chain 2)"]] == b)]
+#       sel_lipids_double = sel_feature_table$lipid[(sel_feature_table[["Carbon count (chain 1)"]] == a &
+#                                                      sel_feature_table[["Double bonds (chain 1)"]] == b) &
+#                                                     (sel_feature_table[["Carbon count (chain 2)"]] == a &
+#                                                        sel_feature_table[["Double bonds (chain 2)"]] == b)]
+#       
+#       res[, sel_fa_chain] = `+`(
+#         rowSums(sel_data_table[, sel_lipids, drop = FALSE], na.rm = TRUE),
+#         rowSums(sel_data_table[, sel_lipids_double, drop = FALSE], na.rm = TRUE)
+#       )
+#     }
+#   }
+#   
+#   # remove empty columns
+#   empty_idx = apply(res, 2, function(x) {
+#     all(x == 0)
+#   })
+#   res = res[, !empty_idx]
+#   
+#   # normalise by total FA's
+#   if(fa_norm) {
+#     res = res / rowSums(res, na.rm = TRUE)
+#   }
+#   
+#   return(res)
+# }
 
 
 fa_analysis_rev_calc = function(data_table = NULL,

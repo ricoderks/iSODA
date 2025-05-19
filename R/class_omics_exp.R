@@ -2099,7 +2099,8 @@ Omics_exp = R6::R6Class(
 
     # Class normalisation
     normalise_class = function(){
-      self$tables$class_norm_data = normalise_lipid_class(self$tables$raw_data)
+      self$tables$class_norm_data = normalise_lipid_class(self$tables$raw_data,
+                                                          is_lipidyzer_data = self$params$is_lipidyzer_data)
     },
 
     # Total or Row normalisation
@@ -3979,6 +3980,7 @@ Omics_exp = R6::R6Class(
                                 x_label_font_size = self$params$fa_analysis_plot$x_label_font_size,
                                 x_tick_font_size = self$params$fa_analysis_plot$x_tick_font_size,
                                 legend_font_size = self$params$fa_analysis_plot$legend_font_size,
+                                # is_lipidyzer_data = self$params$is_lipidyzer_data,
                                 width = NULL,
                                 height = NULL) {
 
@@ -3992,6 +3994,7 @@ Omics_exp = R6::R6Class(
                                sample_meta = sample_meta,
                                selected_lipidclass = selected_lipidclass,
                                fa_norm = fa_norm)
+                               # is_lipidyzer_data = is_lipidyzer_data)
         # column names are fa tail names, rownames sample names
       } else if(selected_view == "fa") {
         res = fa_analysis_rev_calc(data_table = data_table,

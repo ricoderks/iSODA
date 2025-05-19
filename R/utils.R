@@ -1251,7 +1251,7 @@ get_lipid_class.general <- function(feature_list = NULL,
   #                   classes)
   
   # colnames contain the short and long lipid name separated by '|'
-  lipids <- strsplit(x = colnames(lipid_data)[-1],
+  lipids <- strsplit(x = feature_list,
                      split = "\\|")
   
   lipids <- do.call("rbind", lipids)
@@ -1427,54 +1427,16 @@ get_feature_metadata.lipidyzer = function(feature_table) {
 get_feature_metadata.general = function(feature_table) {
   
   print("Rico: feature list")
-  print(rownames(feature_table))
   feature_table[, 'Lipid class'] = get_lipid_classes(feature_list = rownames(feature_table),
                                                      uniques = FALSE)
-  
   # Collect carbon and unsaturation counts
-  new_feature_table = list()
-  
-  for (c in unique(feature_table[, 'Lipid class'])) {
-    idx = rownames(feature_table)[feature_table[, 'Lipid class'] == c]
-    idx <- sapply(strsplit(x = idx,
-                           split = "\\|"), "[[", 2)
-    
-    if (c == "TG") {
-      # For triglycerides
-      truffles = stringr::str_split(string = idx, pattern = " |:|_")
-      names(truffles) = idx
-      new_feature_table = c(new_feature_table, truffles)
-    } else if (c == "ASG") {
-      # only 1 FA tail
-      # skip for now      
-    } else if (sum(stringr::str_detect(string = idx, pattern = "/|_")) > 0) {
-      # For species with asyl groups ("/" or "_")
-      truffles = stringr::str_split(string = idx, pattern = " |:|_|/")
-      names(truffles) = idx
-      new_feature_table = c(new_feature_table, truffles)
-    } else {
-      # For the rest
-      truffles = paste0(idx, ':0:0:0:0')
-      truffles = stringr::str_split(string = truffles, pattern = " |:")
-      names(truffles) = idx
-      new_feature_table = c(new_feature_table, truffles)
-      
-    }
-  }
-  new_feature_table = as.data.frame(t(data.frame(new_feature_table, check.names = F)), check.names = F)
-  new_feature_table[,2] = gsub("[^0-9]", "", new_feature_table[,2])
-  for (col in colnames(new_feature_table)[2:ncol(new_feature_table)]) {
-    new_feature_table[,col] = as.numeric(new_feature_table[,col])
-  }
-  new_feature_table[,6] = new_feature_table[,2] + new_feature_table[,4]
-  new_feature_table[,7] = new_feature_table[,3] + new_feature_table[,5]
-  
-  idx_tgs = which(new_feature_table[,1] == "TG")
-  if (length(idx_tgs) > 0) {
-    new_feature_table[idx_tgs,6] = new_feature_table[idx_tgs,2]
-    new_feature_table[idx_tgs,7] = new_feature_table[idx_tgs,3]
-  }
-  colnames(new_feature_table) = c(
+  new_feature_table <- cbind(
+    feature_table,
+    matrix(data = 0,
+           nrow = nrow(feature_table),
+           ncol = 8)
+  )
+  colnames(new_feature_table) <- c(
     'Lipid class',
     'Carbon count (chain 1)',
     'Double bonds (chain 1)',
@@ -1486,7 +1448,116 @@ get_feature_metadata.general = function(feature_table) {
     'Double bonds (sum)'
   )
   
-  new_feature_table = new_feature_table[rownames(feature_table),]
+  for (c in unique(feature_table[, 'Lipid class'])) {
+    lipids <- rownames(feature_table)[feature_table[, 'Lipid class'] == c]
+    lipids <- sapply(strsplit(x = lipids,
+                              split = "\\|"), "[[", 2)
+    
+    if(c == "ASG") {
+      idx <- grep(x = lipids,
+                  pattern = "^ASG [0-9]+:[0-9]+;O;Hex;FA [0-9]+:[0-9]+$")
+      truffles <- stringr::str_split(
+        string = lipids[idx], 
+        pattern = " |:|;O;Hex;FA "
+      )
+      new_feature_table[new_feature_table[, 1] == c, 2:5][idx, ] <- t(sapply(truffles, "[", c(2:5)))
+    } else if(c %in% c("Cer-AP", "Cer-AS", "Cer-HS", "Cer-NDS", "Cer-NP", "Cer-NS",
+                       "HexCer-AP", "HexCer-AS", "HexCer-HS", "HexCer-NDS", "HexCer-NP", "HexCer-NS")) {
+      idx <- grep(x = lipids,
+                  pattern = "^(Hex)?Cer [0-9]+:[0-9]+;O[23]\\/[0-9]+:[0-9]+(;O)?(\\(2OH\\))?$")
+      truffles <- stringr::str_split(
+        string = lipids[idx], 
+        pattern = " |:|;O[23]\\/|\\(2OH\\)|;O"
+      )
+      new_feature_table[new_feature_table[, 1] == c, 2:5][idx, ] <- t(sapply(truffles, "[", c(2:5)))
+    } else if(c %in% c("HBMP", "TG")) {
+      # three FA tails
+      idx <- grep(x = lipids,
+                  pattern = "^[a-zA-Z]* [0-9]+:[0-9]+_[0-9]+:[0-9]+_[0-9]+:[0-9]+$")
+      truffles <- stringr::str_split(
+        string = lipids[idx], 
+        pattern = " |:|_"
+      )
+      new_feature_table[new_feature_table[, 1] == c, 2:7][idx, ] <- t(sapply(truffles, "[", c(2:7)))
+    } else if(c %in% c("CE", "FA", "LPA", "LPC", "LPE", "LPG", "LPI", "LPS", "OxFA")) {
+      idx <- grep(x = lipids,
+                  pattern = "^[0-9a-zA-Z\\-]* [0-9]+:[0-9]+(\\(2OH\\))?$")
+      truffles <- stringr::str_split(
+        string  = lipids[idx],
+        pattern = " |:|\\(2OH\\)"
+      )
+      if(length(truffles) > 0) {
+        new_feature_table[new_feature_table[, 1] == c, 2:3][idx, ] <- t(sapply(truffles, "[", c(2:3)))
+      }
+    } else if(c %in% c("EtherPC", "EtherPE", "EtherPE(P)", "EtherOxPE", "EtherPG", "EtherPI", "EtherPS")) {
+      idx <- grep(x = lipids,
+                  pattern = "^[0-9a-zA-Z]* [OP]-[0-9]+:[0-9]+_[0-9]+:[0-9]+(;O)?$")
+      truffles <- stringr::str_split(
+        string  = lipids[idx],
+        pattern = "\\-|:|;|_"
+      )
+      if(length(truffles) > 0) {
+        new_feature_table[new_feature_table[, 1] == c, 2:5][idx, ] <- t(sapply(truffles, "[", c(2:5)))
+      }
+    } else if(c %in% c("EtherLPC", "EtherLPE", "EtherLPG")) {
+      idx <- grep(x = lipids,
+                  pattern = "^[0-9a-zA-Z]* [O]-[0-9]+:[0-9]+$")
+      truffles <- stringr::str_split(
+        string  = lipids[idx],
+        pattern = "\\-|:|_"
+      )
+      if(length(truffles) > 0) {
+        new_feature_table[new_feature_table[, 1] == c, 2:3][idx, ] <- t(sapply(truffles, "[", c(2:3)))
+      }
+    } else if(c == "SM") {
+      # FA information
+      idx2 <- grep(x = lipids,
+                   pattern = "^SM [0-9]+:[0-9]+;O[23]\\/[0-9]+:[0-9]+$")
+      truffles2 <- stringr::str_split(
+        string  = lipids[idx2],
+        pattern = " |:|_|;O[23]\\/"
+      )
+      if(length(truffles2) > 0) {
+        new_feature_table[new_feature_table[, 1] == c, 2:5][idx2, ] <- t(sapply(truffles2, "[", c(2:5)))
+      }
+      # no FA information
+      idx <- grep(x = lipids,
+                  pattern = "^SM [0-9]+:[0-9]+;O[23]$")
+      truffles <- stringr::str_split(
+        string  = lipids[idx],
+        pattern = " |:|_|;"
+      )
+      if(length(truffles) > 0) {
+        new_feature_table[new_feature_table[, 1] == c, 8:9][idx, ] <- t(sapply(truffles, "[", c(2:3)))
+      }
+    } else {
+      # everything else
+      # search for 2 tails
+      idx2 <- grep(x = lipids,
+                   pattern = "^[0-9a-zA-Z\\-]* [0-9]+:[0-9]+_[0-9]+:[0-9]+(;O[0-9]?)?$")
+      truffles2 <- stringr::str_split(
+        string  = lipids[idx2],
+        pattern = " |:|_|;"
+      )
+      if(length(truffles2) > 0) {
+        new_feature_table[new_feature_table[, 1] == c, 2:5][idx2, ] <- t(sapply(truffles2, "[", c(2:5)))
+      }
+      # if no tails are available
+      idx <- grep(x = lipids,
+                  pattern = "^[0-9a-zA-Z\\-]* [0-9]+:[0-9]+(;O[0-9]?)?(;S)?(;Hex)?$")
+      truffles <- stringr::str_split(
+        string  = lipids[idx],
+        pattern = " |:|;"
+      )
+      if(length(truffles) > 0) {
+        new_feature_table[new_feature_table[, 1] == c, 8:9][idx, ] <- t(sapply(truffles, "[", c(2:3)))
+      }
+    }
+  }
+  new_feature_table <- as.data.frame(new_feature_table)
+  new_feature_table[, 2:9] <- sapply(new_feature_table[, 2:9], as.numeric)
+  new_feature_table[new_feature_table[, 2] != 0, 8] <- rowSums(new_feature_table[new_feature_table[, 2] != 0, c(2, 4, 6)])
+  new_feature_table[new_feature_table[, 2] != 0, 9] <- rowSums(new_feature_table[new_feature_table[, 2] != 0, c(3, 5, 7)])
   
   return(new_feature_table)
 }

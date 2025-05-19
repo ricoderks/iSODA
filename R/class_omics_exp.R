@@ -749,6 +749,7 @@ Omics_exp = R6::R6Class(
       pca_scores_table = NULL,
       pca_loadings_table = NULL,
       dbplot_table = NULL,
+      fa_analysis_table = NULL,
 
       # GSEA & over representation
       ea_feature_table = NULL,
@@ -3980,7 +3981,7 @@ Omics_exp = R6::R6Class(
                                 x_label_font_size = self$params$fa_analysis_plot$x_label_font_size,
                                 x_tick_font_size = self$params$fa_analysis_plot$x_tick_font_size,
                                 legend_font_size = self$params$fa_analysis_plot$legend_font_size,
-                                # is_lipidyzer_data = self$params$is_lipidyzer_data,
+                                is_lipidyzer_data = self$params$is_lipidyzer_data,
                                 width = NULL,
                                 height = NULL) {
 
@@ -3993,8 +3994,8 @@ Omics_exp = R6::R6Class(
                                feature_table = feature_table,
                                sample_meta = sample_meta,
                                selected_lipidclass = selected_lipidclass,
-                               fa_norm = fa_norm)
-                               # is_lipidyzer_data = is_lipidyzer_data)
+                               fa_norm = fa_norm,
+                               is_lipidyzer_data = is_lipidyzer_data)
         # column names are fa tail names, rownames sample names
       } else if(selected_view == "fa") {
         res = fa_analysis_rev_calc(data_table = data_table,
@@ -4006,13 +4007,14 @@ Omics_exp = R6::R6Class(
 
       # Produce the class x group table
       # add ID's, group's and make long
+      order_chains <- colnames(res)
       res$ID = rownames(res)
       res$group = sample_meta[res$ID, group_col]
       res_long = res |>
         tidyr::pivot_longer(cols = -c(ID, group),
                             names_to = "names",
                             values_to = "value")
-
+      
       # calculate mean and stdev per group
       plot_table = tapply(as.data.frame(res_long), list(res_long$group, res_long$names), function(x) {
         avg = mean(x[, "value"], na.rm = TRUE)
@@ -4025,6 +4027,10 @@ Omics_exp = R6::R6Class(
       })
 
       plot_table = do.call(rbind.data.frame, plot_table)
+      # fix the order of the x-axis
+      plot_table$names <- factor(x = plot_table$names,
+                                 levels = order_chains,
+                                 labels = order_chains)
 
       # Store the plot_table
       self$tables$fa_analysis_table = plot_table

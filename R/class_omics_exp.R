@@ -4002,7 +4002,8 @@ Omics_exp = R6::R6Class(
                                    feature_table = feature_table,
                                    sample_meta = sample_meta,
                                    selected_fa = selected_fa,
-                                   fa_norm = fa_norm)
+                                   fa_norm = fa_norm,
+                                   is_lipidyzer_data = is_lipidyzer_data)
       }
 
       # Produce the class x group table

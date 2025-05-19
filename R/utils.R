@@ -7919,11 +7919,35 @@ fa_analysis_calc.general <- function(data_table = NULL,
 }
 
 
-fa_analysis_rev_calc = function(data_table = NULL,
-                                feature_table = NULL,
-                                sample_meta = NULL,
-                                selected_fa = NULL,
-                                fa_norm = FALSE) {
+fa_analysis_rev_calc <- function(data_table = NULL,
+                                 feature_table = NULL,
+                                 sample_meta = NULL,
+                                 selected_fa = NULL,
+                                 fa_norm = FALSE,
+                                 is_lipidyzer_data = FALSE) {
+  if(is_lipidyzer_data) {
+    res <- fa_analysis_rev_calc.lipidyzer(data_table = data_table,
+                                          feature_table = feature_table,
+                                          sample_meta = sample_meta,
+                                          selected_fa = selected_fa,
+                                          fa_norm = fa_norm)
+  } else {
+    res <- fa_analysis_rev_calc.general(data_table = data_table,
+                                        feature_table = feature_table,
+                                        sample_meta = sample_meta,
+                                        selected_fa = selected_fa,
+                                        fa_norm = fa_norm)
+  }
+  
+  return(res)
+}
+
+
+fa_analysis_rev_calc.lipidyzer <- function(data_table = NULL,
+                                           feature_table = NULL,
+                                           sample_meta = NULL,
+                                           selected_fa = NULL,
+                                           fa_norm = FALSE) {
   uniq_lipid_classes = unique(feature_table[["Lipid class"]][!(feature_table[["Lipid class"]] %in% c("PA"))])
   
   ## Features
@@ -7966,6 +7990,86 @@ fa_analysis_rev_calc = function(data_table = NULL,
   
   # fix the TG's
   res[, "TG"] = res[, "TG"] / 3
+  
+  # remove empty columns
+  empty_idx = apply(res, 2, function(x) {
+    all(x == 0)
+  })
+  res = res[, !empty_idx]
+  
+  # get rid of the zero's
+  res[res == 0] = NA
+  
+  # normalise by total FA's
+  if(fa_norm) {
+    res = res / rowSums(res, na.rm = TRUE)
+  }
+  
+  return(res)
+}
+
+
+fa_analysis_rev_calc.general <- function(data_table = NULL,
+                                         feature_table = NULL,
+                                         sample_meta = NULL,
+                                         selected_fa = NULL,
+                                         fa_norm = FALSE) {
+  uniq_lipid_classes = unique(feature_table[["Lipid class"]])
+  
+  ## Features
+  feature_table$lipid = rownames(feature_table)
+  
+  sel_feat_idx = feature_table$lipid
+  sel_feature_table = feature_table[feature_table$lipid %in% sel_feat_idx, ]
+  
+  ## Data
+  # select the correct data
+  sel_data_table = data_table[, sel_feat_idx]
+  
+  # Initialize results data.frame
+  res = as.data.frame(matrix(ncol = length(uniq_lipid_classes),
+                             nrow = nrow(sel_data_table)))
+  colnames(res) = uniq_lipid_classes
+  rownames(res) = rownames(sel_data_table)
+  
+  # do the calculations
+  fa_norm_tot = 0
+  for(lipid_class in uniq_lipid_classes) {
+    for(fa_tail in selected_fa) {
+      split_fa = as.numeric(unlist(strsplit(fa_tail,
+                                            split = ":",
+                                            fixed = TRUE)))
+      sel_lipids = sel_feature_table$lipid[sel_feature_table[["Lipid class"]] == lipid_class &
+                                             ((sel_feature_table[["Carbon count (chain 1)"]] == split_fa[1] &
+                                                 sel_feature_table[["Double bonds (chain 1)"]] == split_fa[2]) |
+                                                (sel_feature_table[["Carbon count (chain 2)"]] == split_fa[1] &
+                                                   sel_feature_table[["Double bonds (chain 2)"]] == split_fa[2]) |
+                                                (sel_feature_table[["Carbon count (chain 3)"]] == split_fa[1] &
+                                                   sel_feature_table[["Double bonds (chain 3)"]] == split_fa[2]))]
+      sel_lipids_double = sel_feature_table$lipid[sel_feature_table$lipid == lipid_class &
+                                                    (((sel_feature_table[["Carbon count (chain 1)"]] == split_fa[1] &
+                                                         sel_feature_table[["Double bonds (chain 1)"]] == split_fa[2]) &
+                                                        (sel_feature_table[["Carbon count (chain 2)"]] == split_fa[1] &
+                                                           sel_feature_table[["Double bonds (chain 2)"]] == split_fa[2])) | 
+                                                       ((sel_feature_table[["Carbon count (chain 1)"]] == split_fa[1] &
+                                                           sel_feature_table[["Double bonds (chain 1)"]] == split_fa[2]) &
+                                                          (sel_feature_table[["Carbon count (chain 3)"]] == split_fa[1] &
+                                                             sel_feature_table[["Double bonds (chain 3)"]] == split_fa[2])) |
+                                                       ((sel_feature_table[["Carbon count (chain 2)"]] == split_fa[1] &
+                                                           sel_feature_table[["Double bonds (chain 2)"]] == split_fa[2]) &
+                                                          (sel_feature_table[["Carbon count (chain 3)"]] == split_fa[1] &
+                                                             sel_feature_table[["Double bonds (chain 3)"]] == split_fa[2])))]
+      sel_lipids_triple = sel_feature_table$lipid[sel_feature_table[["Lipid class"]] == lipid_class &
+                                                    ((sel_feature_table[["Carbon count (chain 1)"]] == split_fa[1] &
+                                                        sel_feature_table[["Double bonds (chain 1)"]] == split_fa[2]) &
+                                                       (sel_feature_table[["Carbon count (chain 2)"]] == split_fa[1] &
+                                                          sel_feature_table[["Double bonds (chain 2)"]] == split_fa[2]) &
+                                                       (sel_feature_table[["Carbon count (chain 3)"]] == split_fa[1] &
+                                                          sel_feature_table[["Double bonds (chain 3)"]] == split_fa[2]))]
+      
+      res[, lipid_class] = rowSums(sel_data_table[, c(sel_lipids, sel_lipids_double, sel_lipids_triple), drop = FALSE], na.rm = TRUE)
+    } # end selected_fa
+  } # end lipid_class
   
   # remove empty columns
   empty_idx = apply(res, 2, function(x) {

@@ -3550,7 +3550,8 @@ double_bonds_plot_server = function(r6, output, session) {
       shiny::selectizeInput(
         inputId = ns("double_bonds_plot_selected_carbon_chain"),
         label = "Carbon count",
-        choices = c('Carbon count (chain 1)', 'Carbon count (chain 2)', 'Carbon count (sum)'),
+        choices = colnames(r6$tables$raw_feat)[grepl(x = colnames(r6$tables$raw_feat),
+                                                     pattern = "^Carbon count.*")],
         selected = r6$params$double_bonds_plot$selected_carbon_chain,
         multiple = FALSE,
         width = '100%'
@@ -3558,7 +3559,8 @@ double_bonds_plot_server = function(r6, output, session) {
       shiny::selectizeInput(
         inputId = ns("double_bonds_plot_selected_unsat"),
         label = "Double bonds count",
-        choices = c('Double bonds (chain 1)', 'Double bonds (chain 2)', 'Double bonds (sum)'),
+        choices = colnames(r6$tables$raw_feat)[grepl(x = colnames(r6$tables$raw_feat),
+                                                     pattern = "^Double bonds.*")],
         selected = r6$params$double_bonds_plot$selected_unsat,
         multiple = FALSE,
         width = '100%'

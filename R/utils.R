@@ -1894,16 +1894,28 @@ fa_comp_hm_calc = function(data_table = NULL,
                            group_col = NULL,
                            selected_group = NULL,
                            sample_meta = NULL,
-                           selected_lipidclass = NULL) {
+                           selected_lipidclass = NULL,
+                           is_lipidyzer_data = FALSE) {
   
   res = switch(
     composition,
-    "fa_tail" = fa_comp_hm_calc.fa(data_table = data_table,
+    "fa_tail" = {
+      if(is_lipidyzer_data) {
+        fa_comp_hm_calc.lipidyzer.fa(data_table = data_table,
+                                     feature_table = feature_table,
+                                     group_col = group_col,
+                                     selected_group = selected_group,
+                                     sample_meta = sample_meta,
+                                     selected_lipidclass = selected_lipidclass)
+      } else {
+        fa_comp_hm_calc.general.fa(data_table = data_table,
                                    feature_table = feature_table,
                                    group_col = group_col,
                                    selected_group = selected_group,
                                    sample_meta = sample_meta,
-                                   selected_lipidclass = selected_lipidclass),
+                                   selected_lipidclass = selected_lipidclass)
+      }
+    },
     "total_lipid" = fa_comp_hm_calc.total(data_table = data_table,
                                           feature_table = feature_table,
                                           group_col = group_col,
@@ -1915,13 +1927,14 @@ fa_comp_hm_calc = function(data_table = NULL,
   return(res)
 }
 
-fa_comp_hm_calc.fa = function(data_table = NULL,
-                              feature_table = NULL,
-                              composition = NULL,
-                              group_col = NULL,
-                              selected_group = NULL,
-                              sample_meta = NULL,
-                              selected_lipidclass = NULL) {
+
+fa_comp_hm_calc.lipidyzer.fa = function(data_table = NULL,
+                                        feature_table = NULL,
+                                        composition = NULL,
+                                        group_col = NULL,
+                                        selected_group = NULL,
+                                        sample_meta = NULL,
+                                        selected_lipidclass = NULL) {
   ## samples
   idx_samples = rownames(sample_meta)[sample_meta[, group_col] == selected_group]
   hm_data = data_table[idx_samples, , drop = FALSE]
@@ -2003,6 +2016,114 @@ fa_comp_hm_calc.fa = function(data_table = NULL,
   return(res)
 }
 
+
+fa_comp_hm_calc.general.fa = function(data_table = NULL,
+                                      feature_table = NULL,
+                                      composition = NULL,
+                                      group_col = NULL,
+                                      selected_group = NULL,
+                                      sample_meta = NULL,
+                                      selected_lipidclass = NULL) {
+  ## samples
+  idx_samples = rownames(sample_meta)[sample_meta[, group_col] == selected_group]
+  hm_data = data_table[idx_samples, , drop = FALSE]
+  
+  ## features
+  feature_table$lipid = rownames(feature_table)
+  if(selected_lipidclass == "All") {
+    selected_features = feature_table
+  } else {
+    selected_features = feature_table[feature_table[["Lipid class"]] == selected_lipidclass, ]
+  }
+
+  # get the unique chain lengths and unsaturation
+  uniq_carbon = c(
+    min(
+      c(
+        selected_features[["Carbon count (chain 1)"]], 
+        selected_features[["Carbon count (chain 2)"]][selected_features[["Carbon count (chain 2)"]] != 0],
+        selected_features[["Carbon count (chain 3)"]][selected_features[["Carbon count (chain 3)"]] != 0]
+      )
+    ),
+    max(
+      c(
+        selected_features[["Carbon count (chain 1)"]], 
+        selected_features[["Carbon count (chain 2)"]],
+        selected_features[["Carbon count (chain 3)"]]
+      )
+    )
+  )
+  uniq_unsat = c(
+    min(
+      c(
+        selected_features[["Double bonds (chain 1)"]], 
+        selected_features[["Double bonds (chain 2)"]][selected_features[["Carbon count (chain 2)"]] != 0],
+        selected_features[["Double bonds (chain 3)"]][selected_features[["Carbon count (chain 3)"]] != 0]
+      )
+    ),
+    max(
+      c(
+        selected_features[["Double bonds (chain 1)"]], 
+        selected_features[["Double bonds (chain 2)"]],
+        selected_features[["Double bonds (chain 3)"]]
+      )
+    )
+  )
+  
+  ## calculations
+  # initialize result matrix
+  res = matrix(ncol = length(uniq_carbon[1]:uniq_carbon[2]),
+               nrow = length(uniq_unsat[1]:uniq_unsat[2]))
+  colnames(res) = uniq_carbon[1]:uniq_carbon[2]
+  rownames(res) = uniq_unsat[1]:uniq_unsat[2]
+  
+  for(a in rownames(res)) { # unsaturation
+    for(b in colnames(res)) { # carbons
+      idx_lipids = selected_features$lipid[(selected_features[["Carbon count (chain 1)"]] == b &
+                                              selected_features[["Double bonds (chain 1)"]] == a) |
+                                             (selected_features[["Carbon count (chain 2)"]] == b &
+                                                selected_features[["Double bonds (chain 2)"]] == a) |
+                                             (selected_features[["Carbon count (chain 3)"]] == b &
+                                                selected_features[["Double bonds (chain 3)"]] == a)]
+      
+      idx_lipids_double = selected_features$lipid[((selected_features[["Carbon count (chain 1)"]] == a &
+                                                      selected_features[["Double bonds (chain 1)"]] == b) &
+                                                     (selected_features[["Carbon count (chain 2)"]] == a &
+                                                        selected_features[["Double bonds (chain 2)"]] == b)) |
+                                                    ((selected_features[["Carbon count (chain 1)"]] == a &
+                                                        selected_features[["Double bonds (chain 1)"]] == b) &
+                                                       (selected_features[["Carbon count (chain 3)"]] == a &
+                                                          selected_features[["Double bonds (chain 3)"]] == b)) |
+                                                    ((selected_features[["Carbon count (chain 2)"]] == a &
+                                                        selected_features[["Double bonds (chain 2)"]] == b) &
+                                                       (selected_features[["Carbon count (chain 3)"]] == a &
+                                                          selected_features[["Double bonds (chain 3)"]] == b))]
+      sel_lipids_triple = selected_features$lipid[(selected_features[["Carbon count (chain 1)"]] == a &
+                                                     selected_features[["Double bonds (chain 1)"]] == b) &
+                                                    (selected_features[["Carbon count (chain 2)"]] == a &
+                                                       selected_features[["Double bonds (chain 2)"]] == b) &
+                                                    (selected_features[["Carbon count (chain 3)"]] == a &
+                                                       selected_features[["Double bonds (chain 3)"]] == b)]
+      if(length(idx_lipids) > 0) {
+        res[a, b] = sum(hm_data[, idx_lipids], na.rm = TRUE)
+      } else {
+        res[a, b] = 0
+      }
+      
+      # compensate for if a specific tails appears twice in a lipid, sum again
+      if(length(idx_lipids_double) > 0) {
+        res[a, b] = sum(res[a, b], hm_data[, idx_lipids_double], na.rm = TRUE)
+      }
+    }
+  }
+  
+  # calculate the proportion
+  res = res / sum(res)
+  
+  return(res)
+}
+
+
 fa_comp_hm_calc.total = function(data_table = NULL,
                                  feature_table = NULL,
                                  group_col = NULL,
@@ -2082,7 +2203,6 @@ fa_comp_heatmap = function(data = NULL,
   )
   
   colors = unname(colors)
-  
   # make heatmap
   fig = plotly::plot_ly(data = data_df,
                         x = ~col,
@@ -2107,6 +2227,7 @@ fa_comp_heatmap = function(data = NULL,
     fig = fig |>
       plotly::hide_colorbar()
   }
+  
   fig = fig |>
     # vertical line
     plotly::add_segments(

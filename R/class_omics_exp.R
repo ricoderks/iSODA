@@ -4169,6 +4169,7 @@ Omics_exp = R6::R6Class(
                             x_label_font_size = self$params$fa_comp_plot$x_label_font_size,
                             x_tick_font_size = self$params$fa_comp_plot$x_tick_font_size,
                             legend_font_size = self$params$fa_comp_plot$legend_font_size,
+                            is_lipidyzer_data = self$params$is_lipidyzer_data,
                             width = NULL,
                             height = NULL) {
 
@@ -4181,12 +4182,13 @@ Omics_exp = R6::R6Class(
       ## left side
       # heatmap
       hm_left_data = fa_comp_hm_calc(data_table = data_table,
-                                      sample_meta = sample_meta,
-                                      composition = composition,
-                                      feature_table = feature_table,
-                                      group_col = group_col,
-                                      selected_group = group_1,
-                                      selected_lipidclass = selected_lipidclass)
+                                     sample_meta = sample_meta,
+                                     composition = composition,
+                                     feature_table = feature_table,
+                                     group_col = group_col,
+                                     selected_group = group_1,
+                                     selected_lipidclass = selected_lipidclass,
+                                     is_lipidyzer_data = is_lipidyzer_data)
       # bar left top
       bar_top_left_data = data.frame(x = factor(colnames(hm_left_data),
                                                  levels = sort(as.numeric(colnames(hm_left_data))),
@@ -4206,12 +4208,13 @@ Omics_exp = R6::R6Class(
       ## right side
       # heatmap
       hm_right_data = fa_comp_hm_calc(data_table = data_table,
-                                       sample_meta = sample_meta,
-                                       composition = composition,
-                                       feature_table = feature_table,
-                                       group_col = group_col,
-                                       selected_group = group_2,
-                                       selected_lipidclass = selected_lipidclass)
+                                      sample_meta = sample_meta,
+                                      composition = composition,
+                                      feature_table = feature_table,
+                                      group_col = group_col,
+                                      selected_group = group_2,
+                                      selected_lipidclass = selected_lipidclass,
+                                      is_lipidyzer_data = is_lipidyzer_data)
       # bar right top
       bar_top_right_data = data.frame(x = factor(colnames(hm_right_data),
                                                   levels = sort(as.numeric(colnames(hm_right_data))),
@@ -4262,7 +4265,6 @@ Omics_exp = R6::R6Class(
                                     y_tick_font_size = fd$y_tick_font_size,
                                     y_tick_show = fd$y_tick_show,
                                     legend_label_font_size = fd$legend_font_size)
-
 
       fig_bar_top_left = plotly::plot_ly(
         data = bar_top_left_data,

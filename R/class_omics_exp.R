@@ -3421,8 +3421,13 @@ Omics_exp = R6::R6Class(
       }
 
       # Reorder the feature metadata according to the data_table order
-      meta_table_features = meta_table_features[colnames(data_table), , drop = F]
-
+      if(grepl(x = dataset, pattern = "Class")) {
+        meta_table_features <- data.frame("Lipid class" = colnames(data_table),
+                                          check.names = FALSE)
+      } else {
+        meta_table_features = meta_table_features[colnames(data_table), , drop = F]
+      }
+      
       if (!is.null(col_annotations)) {
         col_annotations = meta_table_features[, col_annotations, drop = FALSE]
       }
